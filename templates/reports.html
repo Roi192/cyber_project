@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+
+    <h1>Assessment Reports</h1>
+
+    <p class="subtitle">
+        Network Scanner Security Assessment Reports. For periodic SOC-style
+        reporting (Threat Risk, Behavioral Analytics, Alerts/Incidents, etc.),
+        see Security Reports.
+    </p>
+
+
+    <div class="panel">
+
+        <h2>Available Reports</h2>
+
+        {% if scans %}
+
+        <table>
+
+            <tr>
+                <th>Report</th>
+                <th>Target</th>
+                <th>Date & Time</th>
+                <th>User</th>
+                <th>Security Score</th>
+                <th>Action</th>
+            </tr>
+
+
+            {% for scan in scans %}
+
+            <tr>
+
+                <td>
+                    Report #{{ scan.id }}
+                </td>
+
+                <td>
+                    {{ scan.target_ip }}
+                </td>
+
+                <td>
+                    {{ scan.scan_time }}
+                </td>
+
+                <td>
+                    {% if scan.username %}
+                        {{ scan.username }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+
+                <td>
+                    {{ scan.security_score }}/100
+                </td>
+
+                <td>
+
+                    <a class="details-link"
+                       href="/report/{{ scan.id }}">
+
+                        View Report
+
+                    </a>
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+        {% else %}
+
+        <p>
+            No reports are available yet.
+        </p>
+
+        {% endif %}
+
+    </div>
+
+{% endblock %}

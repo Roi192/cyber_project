@@ -1,0 +1,2396 @@
+# English translations for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-10-05 22:35+0300\n"
+"PO-Revision-Date: 2026-10-04 01:52+0300\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: en\n"
+"Language-Team: en <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: app.py:1067
+msgid "Invalid username or password"
+msgstr "Invalid username or password"
+
+#: app.py:1106
+#, python-format
+msgid ""
+"Account temporarily locked. Try again in approximately %(minutes)s "
+"minute(s)."
+msgstr ""
+"Account temporarily locked. Try again in approximately %(minutes)s "
+"minute(s)."
+
+#: app.py:1241
+#, python-format
+msgid "Too many failed login attempts. Account locked for %(minutes)s minutes."
+msgstr "Too many failed login attempts. Account locked for %(minutes)s minutes."
+
+#: app.py:1276
+#, python-format
+msgid "Invalid username or password. %(attempts_left)s attempt(s) remaining."
+msgstr "Invalid username or password. %(attempts_left)s attempt(s) remaining."
+
+#: app.py:3230
+msgid "Only a NEW alert can be acknowledged."
+msgstr "Only a NEW alert can be acknowledged."
+
+#: app.py:3258
+msgid "Alert acknowledged."
+msgstr "Alert acknowledged."
+
+#: app.py:3265
+msgid "This alert cannot be closed from its current status."
+msgstr "This alert cannot be closed from its current status."
+
+#: app.py:3288
+msgid "Alert closed."
+msgstr "Alert closed."
+
+#: app.py:3295
+msgid "This alert is already escalated to an incident."
+msgstr "This alert is already escalated to an incident."
+
+#: app.py:3302
+msgid "A closed alert cannot be escalated in this phase."
+msgstr "A closed alert cannot be escalated in this phase."
+
+#: app.py:3324
+#, python-format
+msgid "Alert escalated to Incident #%(id)s."
+msgstr "Alert escalated to Incident #%(id)s."
+
+#: app.py:3373
+msgid "This alert has no destination to block/unblock."
+msgstr "This alert has no destination to block/unblock."
+
+#: app.py:3380
+msgid "This alert has no associated endpoint."
+msgstr "This alert has no associated endpoint."
+
+#: app.py:3399 app.py:4021
+msgid ""
+"This endpoint is not a recognized managed endpoint and cannot be "
+"isolated/restored."
+msgstr ""
+"This endpoint is not a recognized managed endpoint and cannot be "
+"isolated/restored."
+
+#: app.py:3433 app.py:4060 templates/alert_details.html:672
+#: templates/alert_details.html:688 templates/incident_details.html:442
+#: templates/incident_details.html:457
+msgid "Block Destination"
+msgstr "Block Destination"
+
+#: app.py:3434 app.py:4061 templates/alert_details.html:680
+#: templates/incident_details.html:450
+msgid "Unblock Destination"
+msgstr "Unblock Destination"
+
+#: app.py:3435 app.py:4062 templates/alert_details.html:703
+#: templates/alert_details.html:719 templates/incident_details.html:487
+#: templates/incident_details.html:502
+msgid "Isolate Endpoint"
+msgstr "Isolate Endpoint"
+
+#: app.py:3436 app.py:4063 templates/alert_details.html:711
+#: templates/incident_details.html:495
+msgid "Restore Endpoint"
+msgstr "Restore Endpoint"
+
+#: app.py:3440
+#, python-format
+msgid ""
+"%(command_label)s requested (command #%(command_id)s). The Endpoint Agent"
+" will pick this up on its next poll."
+msgstr ""
+"%(command_label)s requested (command #%(command_id)s). The Endpoint Agent"
+" will pick this up on its next poll."
+
+#: app.py:3448
+msgid "Unknown action."
+msgstr "Unknown action."
+
+#: app.py:3955
+msgid ""
+"No destination is available for this incident (no linked Alert with a "
+"recorded domain/IP, and this is not a manual IP reputation incident with "
+"a recorded IP)."
+msgstr ""
+"No destination is available for this incident (no linked Alert with a "
+"recorded domain/IP, and this is not a manual IP reputation incident with "
+"a recorded IP)."
+
+#: app.py:3975 templates/incident_details.html:477
+msgid ""
+"Blocking is not currently available because this Incident is not "
+"associated with a managed endpoint."
+msgstr ""
+"Blocking is not currently available because this Incident is not "
+"associated with a managed endpoint."
+
+#: app.py:3987
+msgid "This incident has no associated endpoint."
+msgstr "This incident has no associated endpoint."
+
+#: app.py:4067
+#, python-format
+msgid "%(command_label)s requested (command #%(command_id)s)."
+msgstr "%(command_label)s requested (command #%(command_id)s)."
+
+#: app.py:4094
+msgid "Invalid incident status."
+msgstr "Invalid incident status."
+
+#: app.py:4160 templates/incident_details.html:619
+msgid "Open"
+msgstr "Open"
+
+#: app.py:4161 templates/incident_details.html:620
+msgid "Investigating"
+msgstr "Investigating"
+
+#: app.py:4162 templates/incident_details.html:621
+msgid "Resolved"
+msgstr "Resolved"
+
+#: app.py:4166
+#, python-format
+msgid "Incident status changed from %(old)s to %(new)s."
+msgstr "Incident status changed from %(old)s to %(new)s."
+
+#: i18n.py:105 templates/dashboard.html:361
+msgid "Critical"
+msgstr "Critical"
+
+#: i18n.py:106 templates/dashboard.html:361
+msgid "High"
+msgstr "High"
+
+#: i18n.py:107 templates/dashboard.html:361
+msgid "Medium"
+msgstr "Medium"
+
+#: i18n.py:108 templates/dashboard.html:362
+msgid "Low"
+msgstr "Low"
+
+#: i18n.py:109 templates/dashboard.html:362
+msgid "Info"
+msgstr "Info"
+
+#: plain_language.py:92
+msgid ""
+"A computer on your network attempted to connect to a website or server "
+"that is considered risky or potentially malicious."
+msgstr ""
+"A computer on your network attempted to connect to a website or server "
+"that is considered risky or potentially malicious."
+
+#: plain_language.py:93
+msgid ""
+"This could expose your business to malware, data theft, or further "
+"compromise if the connection succeeded or is repeated."
+msgstr ""
+"This could expose your business to malware, data theft, or further "
+"compromise if the connection succeeded or is repeated."
+
+#: plain_language.py:97
+msgid ""
+"A computer on your network communicated with a destination that "
+"independent threat-intelligence sources have confirmed as malicious."
+msgstr "A computer on your network communicated with a destination that independent threat-intelligence sources have confirmed as malicious."
+
+#: plain_language.py:98
+msgid ""
+"This is a confirmed match, not a guess - the connection may have exposed "
+"your business to malware or data theft."
+msgstr "This is a confirmed match, not a guess - the connection may have exposed your business to malware or data theft."
+
+#: plain_language.py:102
+msgid ""
+"A computer on your network communicated with a destination, or ran a "
+"file, that exactly matches an indicator your organization specifically "
+"flagged as malicious."
+msgstr "A computer on your network communicated with a destination, or ran a file, that exactly matches an indicator your organization specifically flagged as malicious."
+
+#: plain_language.py:103
+msgid ""
+"This is a direct match against a known threat your organization is "
+"already tracking."
+msgstr "This is a direct match against a known threat your organization is already tracking."
+
+#: plain_language.py:107
+msgid ""
+"A program behaving unusually on a computer also communicated with a "
+"destination carrying threat-intelligence evidence."
+msgstr "A program behaving unusually on a computer also communicated with a destination carrying threat-intelligence evidence."
+
+#: plain_language.py:108
+msgid ""
+"The combination of an unusual program and a risky destination together is"
+" more concerning than either alone."
+msgstr "The combination of an unusual program and a risky destination together is more concerning than either alone."
+
+#: plain_language.py:112
+msgid ""
+"A program was started with command-line options that match a technique "
+"sometimes used to hide malicious activity."
+msgstr "A program was started with command-line options that match a technique sometimes used to hide malicious activity."
+
+#: plain_language.py:113
+msgid ""
+"This does not by itself confirm malicious intent, but it is a pattern "
+"worth a person reviewing."
+msgstr "This does not by itself confirm malicious intent, but it is a pattern worth a person reviewing."
+
+#: plain_language.py:117
+msgid ""
+"A program ran from a temporary or unusual folder, together with at least "
+"one other suspicious sign."
+msgstr "A program ran from a temporary or unusual folder, together with at least one other suspicious sign."
+
+#: plain_language.py:118
+msgid ""
+"Legitimate software rarely runs from these locations - this combination "
+"is worth reviewing."
+msgstr "Legitimate software rarely runs from these locations - this combination is worth reviewing."
+
+#: plain_language.py:122
+msgid ""
+"Activity on a computer deviated from that computer's own established "
+"normal behavior, together with at least one other suspicious sign."
+msgstr "Activity on a computer deviated from that computer's own established normal behavior, together with at least one other suspicious sign."
+
+#: plain_language.py:123
+msgid ""
+"This is a behavioral signal, not proof on its own - it is reported "
+"because it was corroborated by other evidence."
+msgstr "This is a behavioral signal, not proof on its own - it is reported because it was corroborated by other evidence."
+
+#: plain_language.py:127
+msgid ""
+"Multiple failed login attempts were detected on a user account, and the "
+"account was temporarily locked for protection."
+msgstr ""
+"Multiple failed login attempts were detected on a user account, and the "
+"account was temporarily locked for protection."
+
+#: plain_language.py:128
+msgid ""
+"This may indicate someone is trying to guess a password to gain "
+"unauthorized access to your systems."
+msgstr ""
+"This may indicate someone is trying to guess a password to gain "
+"unauthorized access to your systems."
+
+#: plain_language.py:132
+msgid ""
+"An IP address that was checked was found to have a poor security "
+"reputation, as reported by external threat intelligence services."
+msgstr ""
+"An IP address that was checked was found to have a poor security "
+"reputation, as reported by external threat intelligence services."
+
+#: plain_language.py:133
+msgid ""
+"Communication with this address could be linked to malicious activity "
+"such as scanning, attacks, or malware distribution."
+msgstr ""
+"Communication with this address could be linked to malicious activity "
+"such as scanning, attacks, or malware distribution."
+
+#: plain_language.py:137
+msgid ""
+"A scanned target matched a known indicator of compromise from threat "
+"intelligence sources."
+msgstr ""
+"A scanned target matched a known indicator of compromise from threat "
+"intelligence sources."
+
+#: plain_language.py:138
+msgid ""
+"This target has previously been associated with malicious activity and "
+"may pose a risk if connected to."
+msgstr ""
+"This target has previously been associated with malicious activity and "
+"may pose a risk if connected to."
+
+#: plain_language.py:144
+msgid "A security event was recorded by the system."
+msgstr "A security event was recorded by the system."
+
+#: plain_language.py:145
+msgid ""
+"The specific business impact could not be summarized automatically - "
+"please review the technical details."
+msgstr ""
+"The specific business impact could not be summarized automatically - "
+"please review the technical details."
+
+#: plain_language.py:149
+msgid ""
+"A security event of an unrecognized type was recorded. Please see the "
+"technical details below for the full information."
+msgstr ""
+"A security event of an unrecognized type was recorded. Please see the "
+"technical details below for the full information."
+
+#: plain_language.py:152
+msgid ""
+"The specific business impact could not be summarized automatically for "
+"this type of event - please review the technical details."
+msgstr ""
+"The specific business impact could not be summarized automatically for "
+"this type of event - please review the technical details."
+
+#: plain_language.py:155
+msgid ""
+"No specific recommended action is recorded for this type of event. Please"
+" review the technical details and consider a manual investigation."
+msgstr ""
+"No specific recommended action is recorded for this type of event. Please"
+" review the technical details and consider a manual investigation."
+
+#: plain_language.py:204 plain_language.py:254
+msgid "Still open"
+msgstr "Still open"
+
+#: plain_language.py:204 plain_language.py:254
+msgid "Already handled"
+msgstr "Already handled"
+
+#: plain_language.py:209
+msgid "Computer:"
+msgstr "Computer:"
+
+#: plain_language.py:242
+msgid "Account:"
+msgstr "Account:"
+
+#: plain_language.py:245
+msgid "Computer / IP:"
+msgstr "Computer / IP:"
+
+#: templates/alert_details.html:3 templates/incident_details.html:295
+#, python-format
+msgid "Alert #%(id)s"
+msgstr "Alert #%(id)s"
+
+#: templates/alert_details.html:78
+#, python-format
+msgid "Security Alert #%(id)s"
+msgstr "Security Alert #%(id)s"
+
+#: templates/alert_details.html:108 templates/incident_details.html:94
+msgid "Plain-Language Summary"
+msgstr "Plain-Language Summary"
+
+#: templates/alert_details.html:110 templates/incident_details.html:96
+msgid "What happened"
+msgstr "What happened"
+
+#: templates/alert_details.html:115 templates/executive_dashboard.html:137
+#: templates/incident_details.html:101
+msgid "Not available"
+msgstr "Not available"
+
+#: templates/alert_details.html:118 templates/incident_details.html:104
+msgid "Possible business impact"
+msgstr "Possible business impact"
+
+#: templates/alert_details.html:122 templates/incident_details.html:108
+msgid "Recommended action"
+msgstr "Recommended action"
+
+#: templates/alert_details.html:125 templates/incident_details.html:111
+#, python-format
+msgid "(and %(n)s more step(s) below)"
+msgstr "(and %(n)s more step(s) below)"
+
+#: templates/alert_details.html:129 templates/incident_details.html:115
+msgid "Current state"
+msgstr "Current state"
+
+#: templates/alert_details.html:134 templates/incident_details.html:120
+msgid ""
+"This event type was not recognized by the plain-language summary - the "
+"explanation above is generic. See the technical sections below for the "
+"full details."
+msgstr ""
+"This event type was not recognized by the plain-language summary - the "
+"explanation above is generic. See the technical sections below for the "
+"full details."
+
+#: templates/alert_details.html:150 templates/alert_details.html:439
+#: templates/alerts.html:46 templates/alerts.html:101 templates/alerts.html:211
+#: templates/dashboard.html:94 templates/dashboard.html:138
+#: templates/dashboard.html:336 templates/incident_details.html:134
+#: templates/incident_details.html:299
+msgid "Severity"
+msgstr "Severity"
+
+#: templates/alert_details.html:152 templates/alert_details.html:266
+msgid ""
+"IOC Severity describes the configured severity of the matched indicator. "
+"Alert Severity is derived from the event's overall risk assessment."
+msgstr ""
+"IOC Severity describes the configured severity of the matched indicator. "
+"Alert Severity is derived from the event's overall risk assessment."
+
+#: templates/alert_details.html:158 templates/incident_details.html:303
+#: templates/incident_details.html:372
+msgid "Risk Score"
+msgstr "Risk Score"
+
+#: templates/alert_details.html:163 templates/alert_details.html:490
+#: templates/alert_details.html:756 templates/alerts.html:56
+#: templates/alerts.html:106 templates/alerts.html:215
+#: templates/dashboard.html:99 templates/dashboard.html:141
+#: templates/dashboard.html:181 templates/dashboard.html:255
+#: templates/incident_details.html:139 templates/incident_details.html:307
+#: templates/incident_details.html:557
+msgid "Status"
+msgstr "Status"
+
+#: templates/alert_details.html:166 templates/alerts.html:59
+#: templates/alerts.html:162 templates/dashboard.html:110
+msgid "NEW"
+msgstr "NEW"
+
+#: templates/alert_details.html:168 templates/alert_details.html:777
+#: templates/alerts.html:60 templates/alerts.html:164
+#: templates/dashboard.html:111 templates/incident_details.html:584
+msgid "ACKNOWLEDGED"
+msgstr "ACKNOWLEDGED"
+
+#: templates/alert_details.html:170 templates/alerts.html:61
+#: templates/alerts.html:166 templates/dashboard.html:112
+msgid "ESCALATED"
+msgstr "ESCALATED"
+
+#: templates/alert_details.html:172 templates/alerts.html:62
+#: templates/alerts.html:168 templates/dashboard.html:113
+msgid "CLOSED"
+msgstr "CLOSED"
+
+#: templates/alert_details.html:178 templates/alerts.html:77
+#: templates/alerts.html:107 templates/alerts.html:212
+msgid "Incident"
+msgstr "Incident"
+
+#: templates/alert_details.html:182 templates/alerts.html:175
+#: templates/incident_details.html:3 templates/incident_details.html:69
+#, python-format
+msgid "Incident #%(id)s"
+msgstr "Incident #%(id)s"
+
+#: templates/alert_details.html:185
+msgid "Not Escalated"
+msgstr "Not Escalated"
+
+#: templates/alert_details.html:197 templates/process_event_detail.html:25
+#: templates/process_events.html:23
+msgid "Process:"
+msgstr "Process:"
+
+#: templates/alert_details.html:210 templates/alert_details.html:216
+#: templates/alerts.html:143 templates/alerts.html:149
+#: templates/incident_details.html:206 templates/incident_details.html:230
+#: templates/incident_details.html:247 templates/incident_details.html:321
+#: templates/incident_details.html:327
+msgid "Copy IP address"
+msgstr "Copy IP address"
+
+#: templates/alert_details.html:210 templates/alert_details.html:216
+#: templates/alerts.html:143 templates/alerts.html:149
+#: templates/incident_details.html:206 templates/incident_details.html:230
+#: templates/incident_details.html:247 templates/incident_details.html:321
+#: templates/incident_details.html:327
+msgid "Copy"
+msgstr "Copy"
+
+#: templates/alert_details.html:228 templates/alerts.html:108
+#: templates/incident_details.html:154
+msgid "Detected"
+msgstr "Detected"
+
+#: templates/alert_details.html:229 templates/incident_details.html:155
+msgid "Last Updated"
+msgstr "Last Updated"
+
+#: templates/alert_details.html:230
+msgid "Acknowledged By"
+msgstr "Acknowledged By"
+
+#: templates/alert_details.html:232
+#, python-format
+msgid "%(who)s at %(when)s"
+msgstr "%(who)s at %(when)s"
+
+#: templates/alert_details.html:244
+msgid "Detection Evidence"
+msgstr "Detection Evidence"
+
+#: templates/alert_details.html:246
+msgid "Why the system created this Alert."
+msgstr "Why the system created this Alert."
+
+#: templates/alert_details.html:254
+msgid "LOCAL IOC MATCH"
+msgstr "LOCAL IOC MATCH"
+
+#: templates/alert_details.html:257 templates/alert_details.html:489
+msgid "Indicator"
+msgstr "Indicator"
+
+#: templates/alert_details.html:261
+msgid "Indicator Type"
+msgstr "Indicator Type"
+
+#: templates/alert_details.html:267
+msgid "IOC Severity"
+msgstr "IOC Severity"
+
+#: templates/alert_details.html:275
+msgid "IOC Status"
+msgstr "IOC Status"
+
+#: templates/alert_details.html:276
+msgid "Active"
+msgstr "Active"
+
+#: templates/alert_details.html:276
+msgid "Inactive"
+msgstr "Inactive"
+
+#: templates/alert_details.html:280
+msgid "Description"
+msgstr "Description"
+
+#: templates/alert_details.html:285
+msgid "Indicator Source"
+msgstr "Indicator Source"
+
+#: templates/alert_details.html:289
+#, python-format
+msgid "(added %(when)s by %(who)s)"
+msgstr "(added %(when)s by %(who)s)"
+
+#: templates/alert_details.html:291
+#, python-format
+msgid "(added %(when)s)"
+msgstr "(added %(when)s)"
+
+#: templates/alert_details.html:296
+msgid "Observed Endpoint"
+msgstr "Observed Endpoint"
+
+#: templates/alert_details.html:300
+msgid "Observed Process"
+msgstr "Observed Process"
+
+#: templates/alert_details.html:314
+msgid ""
+"No VirusTotal or AbuseIPDB contribution is recorded for this alert. "
+"Stored reputation data does not indicate whether these services were "
+"queried and returned a clean result, or were not reached - no external "
+"reputation result is claimed either way."
+msgstr ""
+"No VirusTotal or AbuseIPDB contribution is recorded for this alert. "
+"Stored reputation data does not indicate whether these services were "
+"queried and returned a clean result, or were not reached - no external "
+"reputation result is claimed either way."
+
+#: templates/alert_details.html:319
+msgid "No detection reasons recorded."
+msgstr "No detection reasons recorded."
+
+#: templates/alert_details.html:329
+msgid "Risk Assessment"
+msgstr "Risk Assessment"
+
+#: templates/alert_details.html:333
+msgid "Stored Risk Score"
+msgstr "Stored Risk Score"
+
+#: templates/alert_details.html:338
+msgid ""
+"Risk score bands: 0-14 INFO, 15-34 LOW, 35-59 MEDIUM, 60-79 HIGH, 80-100 "
+"CRITICAL. Alert Severity is derived from the stored Risk Score using "
+"these fixed bands."
+msgstr ""
+"Risk score bands: 0-14 INFO, 15-34 LOW, 35-59 MEDIUM, 60-79 HIGH, 80-100 "
+"CRITICAL. Alert Severity is derived from the stored Risk Score using "
+"these fixed bands."
+
+#: templates/alert_details.html:339
+msgid "Alert Severity"
+msgstr "Alert Severity"
+
+#: templates/alert_details.html:347
+msgid ""
+"IOC Severity describes the configured severity of the matched indicator. "
+"Alert Severity is derived from the event's overall risk assessment. The "
+"two are not expected to match."
+msgstr ""
+"IOC Severity describes the configured severity of the matched indicator. "
+"Alert Severity is derived from the event's overall risk assessment. The "
+"two are not expected to match."
+
+#: templates/alert_details.html:348
+msgid "Matched IOC Severity"
+msgstr "Matched IOC Severity"
+
+#: templates/alert_details.html:359
+msgid "Risk Contributions"
+msgstr "Risk Contributions"
+
+#: templates/alert_details.html:359 templates/alert_details.html:383
+msgid "Verified Risk Evidence"
+msgstr "Verified Risk Evidence"
+
+#: templates/alert_details.html:370
+msgid "Total"
+msgstr "Total"
+
+#: templates/alert_details.html:370
+msgid "(verified evidence only)"
+msgstr "(verified evidence only)"
+
+#: templates/alert_details.html:377
+msgid ""
+"A complete historical contribution breakdown is not available for this "
+"alert - the verified evidence above does not fully account for the stored"
+" Risk Score."
+msgstr ""
+"A complete historical contribution breakdown is not available for this "
+"alert - the verified evidence above does not fully account for the stored"
+" Risk Score."
+
+#: templates/alert_details.html:385
+msgid ""
+"No detection reason could be matched to a specific, verifiable scoring "
+"contribution."
+msgstr ""
+"No detection reason could be matched to a specific, verifiable scoring "
+"contribution."
+
+#: templates/alert_details.html:388
+msgid ""
+"A complete historical contribution breakdown is not available for this "
+"alert."
+msgstr ""
+"A complete historical contribution breakdown is not available for this "
+"alert."
+
+#: templates/alert_details.html:400
+msgid "Associated Events"
+msgstr "Associated Events"
+
+#: templates/alert_details.html:402
+msgid ""
+"Every web event explicitly recorded as related to this alert. The alert's"
+" \"latest referenced event\" is only the most recent one; earlier events "
+"are kept here. \"Earliest\" means the earliest explicit relationship, not"
+" a proven origin."
+msgstr ""
+"Every web event explicitly recorded as related to this alert. The alert's"
+" \"latest referenced event\" is only the most recent one; earlier events "
+"are kept here. \"Earliest\" means the earliest explicit relationship, not"
+" a proven origin."
+
+#: templates/alert_details.html:407
+msgid "Total associated events:"
+msgstr "Total associated events:"
+
+#: templates/alert_details.html:409
+msgid "Earliest associated event:"
+msgstr "Earliest associated event:"
+
+#: templates/alert_details.html:413
+msgid "Latest associated event:"
+msgstr "Latest associated event:"
+
+#: templates/alert_details.html:419
+msgid "The earliest event was recorded as the event this alert was created from."
+msgstr "The earliest event was recorded as the event this alert was created from."
+
+#: templates/alert_details.html:422
+msgid ""
+"The earliest event is a dedup refresh; it is not shown as the original "
+"event."
+msgstr ""
+"The earliest event is a dedup refresh; it is not shown as the original "
+"event."
+
+#: templates/alert_details.html:424
+msgid ""
+"The earliest event is a legacy relationship (backfilled from stored "
+"evidence); it is not shown as the original event."
+msgstr ""
+"The earliest event is a legacy relationship (backfilled from stored "
+"evidence); it is not shown as the original event."
+
+#: templates/alert_details.html:434
+msgid "Event"
+msgstr "Event"
+
+#: templates/alert_details.html:435
+msgid "Server receipt time"
+msgstr "Server receipt time"
+
+#: templates/alert_details.html:436
+msgid "Endpoint identity"
+msgstr "Endpoint identity"
+
+#: templates/alert_details.html:437 templates/incident_details.html:337
+#: templates/process_event_detail.html:23
+msgid "Process"
+msgstr "Process"
+
+#: templates/alert_details.html:438 templates/alerts.html:104
+#: templates/dashboard.html:97 templates/dashboard.html:219
+#: templates/process_event_detail.html:63
+msgid "Destination"
+msgstr "Destination"
+
+#: templates/alert_details.html:440
+msgid "Relationship"
+msgstr "Relationship"
+
+#: templates/alert_details.html:446
+#, python-format
+msgid "Investigate #%(id)s"
+msgstr "Investigate #%(id)s"
+
+#: templates/alert_details.html:448
+msgid "stable"
+msgstr "stable"
+
+#: templates/alert_details.html:448
+msgid "historical / IP-only"
+msgstr "historical / IP-only"
+
+#: templates/alert_details.html:453
+msgid "Created from this event"
+msgstr "Created from this event"
+
+#: templates/alert_details.html:454
+msgid "Dedup refresh"
+msgstr "Dedup refresh"
+
+#: templates/alert_details.html:455
+msgid "Legacy latest reference"
+msgstr "Legacy latest reference"
+
+#: templates/alert_details.html:456
+msgid "Legacy text association"
+msgstr "Legacy text association"
+
+#: templates/alert_details.html:465
+#, python-format
+msgid "Showing the %(shown)s most recent of %(total)s associated events."
+msgstr "Showing the %(shown)s most recent of %(total)s associated events."
+
+#: templates/alert_details.html:468
+msgid "No web events are recorded as associated with this alert."
+msgstr "No web events are recorded as associated with this alert."
+
+#: templates/alert_details.html:478
+msgid "Threat Intelligence Evidence"
+msgstr "Threat Intelligence Evidence"
+
+#: templates/alert_details.html:480
+msgid ""
+"Third-party context (ThreatFox, URLhaus), kept visually separate from the"
+" Local IOC evidence above. A match here means the indicator is listed by "
+"that external source - it does not by itself prove this endpoint is "
+"compromised. Only ThreatFox affects Investigation Priority below; URLhaus"
+" is context-only in this phase."
+msgstr ""
+"Third-party context (ThreatFox, URLhaus), kept visually separate from the"
+" Local IOC evidence above. A match here means the indicator is listed by "
+"that external source - it does not by itself prove this endpoint is "
+"compromised. Only ThreatFox affects Investigation Priority below; URLhaus"
+" is context-only in this phase."
+
+#: templates/alert_details.html:488
+msgid "Provider"
+msgstr "Provider"
+
+#: templates/alert_details.html:491
+msgid "Classification"
+msgstr "Classification"
+
+#: templates/alert_details.html:492
+msgid "Evidence"
+msgstr "Evidence"
+
+#: templates/alert_details.html:493
+msgid "Retrieved"
+msgstr "Retrieved"
+
+#: templates/alert_details.html:494
+msgid "Expires"
+msgstr "Expires"
+
+#: templates/alert_details.html:506
+msgid "Match"
+msgstr "Match"
+
+#: templates/alert_details.html:510
+msgid "Confidence:"
+msgstr "Confidence:"
+
+#: templates/alert_details.html:511
+msgid "First:"
+msgstr "First:"
+
+#: templates/alert_details.html:511
+msgid "Last:"
+msgstr "Last:"
+
+#: templates/alert_details.html:515
+msgid "No match"
+msgstr "No match"
+
+#: templates/alert_details.html:520
+msgid "Temporarily rate limited"
+msgstr "Temporarily rate limited"
+
+#: templates/alert_details.html:525
+msgid "Lookup unavailable"
+msgstr "Lookup unavailable"
+
+#: templates/alert_details.html:530
+msgid "Not configured"
+msgstr "Not configured"
+
+#: templates/alert_details.html:532
+msgid "This provider has no API key configured."
+msgstr "This provider has no API key configured."
+
+#: templates/alert_details.html:535
+msgid "No stored evidence yet"
+msgstr "No stored evidence yet"
+
+#: templates/alert_details.html:537
+msgid "Enrichment may not have run yet - this is not a negative result."
+msgstr "Enrichment may not have run yet - this is not a negative result."
+
+#: templates/alert_details.html:547
+msgid ""
+"No candidate indicators (public IP / domain / SHA-256 / MD5) were "
+"available for this alert."
+msgstr ""
+"No candidate indicators (public IP / domain / SHA-256 / MD5) were "
+"available for this alert."
+
+#: templates/alert_details.html:556
+#, python-format
+msgid "Investigate Referenced Event #%(id)s"
+msgstr "Investigate Referenced Event #%(id)s"
+
+#: templates/alert_details.html:557
+msgid ""
+"the alert's latest referenced event, not necessarily the first event that"
+" triggered it"
+msgstr ""
+"the alert's latest referenced event, not necessarily the first event that"
+" triggered it"
+
+#: templates/alert_details.html:566
+msgid "Cloudflare Intelligence (manual)"
+msgstr "Cloudflare Intelligence (manual)"
+
+#: templates/alert_details.html:568
+msgid ""
+"On-demand, cache-first context for the public IP and domain of this "
+"alert. Nothing is requested when this page loads. Results are context "
+"only and never change Threat Risk, Alert Severity, Behavioral Anomaly, "
+"Investigation Priority or any response action."
+msgstr ""
+"On-demand, cache-first context for the public IP and domain of this "
+"alert. Nothing is requested when this page loads. Results are context "
+"only and never change Threat Risk, Alert Severity, Behavioral Anomaly, "
+"Investigation Priority or any response action."
+
+#: templates/alert_details.html:569
+#, python-format
+msgid "Cloudflare application budget: %(used)s / %(total)s used."
+msgstr "Cloudflare application budget: %(used)s / %(total)s used."
+
+#: templates/alert_details.html:585
+msgid "Investigate with Cloudflare"
+msgstr "Investigate with Cloudflare"
+
+#: templates/alert_details.html:588
+msgid "Cloudflare evidence cached (see table above)"
+msgstr "Cloudflare evidence cached (see table above)"
+
+#: templates/alert_details.html:590
+msgid "Cloudflare not configured"
+msgstr "Cloudflare not configured"
+
+#: templates/alert_details.html:592
+msgid "Application budget exhausted"
+msgstr "Application budget exhausted"
+
+#: templates/alert_details.html:594
+msgid "Paused after a rate-limit response"
+msgstr "Paused after a rate-limit response"
+
+#: templates/alert_details.html:596
+msgid "Not eligible"
+msgstr "Not eligible"
+
+#: templates/alert_details.html:608
+msgid "Investigation Priority"
+msgstr "Investigation Priority"
+
+#: templates/alert_details.html:610
+msgid ""
+"Analyst-facing prioritization only - does not replace Risk Score, Alert "
+"Severity, or Behavioral Anomaly above, and never triggers any automatic "
+"action on its own."
+msgstr ""
+"Analyst-facing prioritization only - does not replace Risk Score, Alert "
+"Severity, or Behavioral Anomaly above, and never triggers any automatic "
+"action on its own."
+
+#: templates/alert_details.html:614
+msgid "URGENT"
+msgstr "URGENT"
+
+#: templates/alert_details.html:616
+msgid "ELEVATED"
+msgstr "ELEVATED"
+
+#: templates/alert_details.html:618
+msgid "REVIEW"
+msgstr "REVIEW"
+
+#: templates/alert_details.html:620
+msgid "ROUTINE"
+msgstr "ROUTINE"
+
+#: templates/alert_details.html:635
+msgid "Recommended Response"
+msgstr "Recommended Response"
+
+#: templates/alert_details.html:638
+msgid ""
+"Rule-based analyst guidance. These recommendations have not been executed"
+" automatically."
+msgstr ""
+"Rule-based analyst guidance. These recommendations have not been executed"
+" automatically."
+
+#: templates/alert_details.html:651
+msgid "No recommended response recorded."
+msgstr "No recommended response recorded."
+
+#: templates/alert_details.html:661 templates/base.html:101
+#: templates/incident_details.html:431 templates/incident_details.html:527
+msgid "Response Actions"
+msgstr "Response Actions"
+
+#: templates/alert_details.html:664
+msgid ""
+"Admin-only. Creates a command for the Endpoint Agent to pick up on its "
+"next poll - nothing happens instantly, and nothing is enforced unless the"
+" Agent itself has real enforcement enabled (see Activity & Actions Taken "
+"below for the Mode the Agent actually reported)."
+msgstr ""
+"Admin-only. Creates a command for the Endpoint Agent to pick up on its "
+"next poll - nothing happens instantly, and nothing is enforced unless the"
+" Agent itself has real enforcement enabled (see Activity & Actions Taken "
+"below for the Mode the Agent actually reported)."
+
+#: templates/alert_details.html:673 templates/incident_details.html:443
+msgid ""
+"Request the Endpoint Agent to block communication with this destination "
+"on the affected endpoint."
+msgstr ""
+"Request the Endpoint Agent to block communication with this destination "
+"on the affected endpoint."
+
+#: templates/alert_details.html:677 templates/incident_details.html:447
+msgid "Request unblocking of this destination on the affected endpoint?"
+msgstr "Request unblocking of this destination on the affected endpoint?"
+
+#: templates/alert_details.html:684 templates/incident_details.html:454
+msgid "Request blocking of this destination on the affected endpoint?"
+msgstr "Request blocking of this destination on the affected endpoint?"
+
+#: templates/alert_details.html:696 templates/incident_details.html:518
+#, python-format
+msgid "Block Organization-wide (%(target)s)"
+msgstr "Block Organization-wide (%(target)s)"
+
+#: templates/alert_details.html:704 templates/incident_details.html:488
+msgid ""
+"Request containment of the affected endpoint while preserving the "
+"configured SOC communication path."
+msgstr ""
+"Request containment of the affected endpoint while preserving the "
+"configured SOC communication path."
+
+#: templates/alert_details.html:708 templates/incident_details.html:492
+msgid "Request restoring network connectivity for this endpoint?"
+msgstr "Request restoring network connectivity for this endpoint?"
+
+#: templates/alert_details.html:715 templates/incident_details.html:499
+msgid ""
+"Request isolation of this endpoint? This may restrict its network "
+"connectivity."
+msgstr ""
+"Request isolation of this endpoint? This may restrict its network "
+"connectivity."
+
+#: templates/alert_details.html:730 templates/incident_details.html:530
+#, python-format
+msgid ""
+"Current state: destination is %(block_state)s, endpoint is "
+"%(isolate_state)s. Only an Administrator can change this."
+msgstr ""
+"Current state: destination is %(block_state)s, endpoint is "
+"%(isolate_state)s. Only an Administrator can change this."
+
+#: templates/alert_details.html:731 templates/incident_details.html:531
+msgid "blocked"
+msgstr "blocked"
+
+#: templates/alert_details.html:731 templates/incident_details.html:531
+msgid "not blocked"
+msgstr "not blocked"
+
+#: templates/alert_details.html:732 templates/incident_details.html:532
+msgid "isolated"
+msgstr "isolated"
+
+#: templates/alert_details.html:732 templates/incident_details.html:532
+msgid "not isolated"
+msgstr "not isolated"
+
+#: templates/alert_details.html:743 templates/incident_details.html:542
+msgid "Activity & Actions Taken"
+msgstr "Activity & Actions Taken"
+
+#: templates/alert_details.html:746
+msgid ""
+"What was actually requested/executed - separate from Recommended Response"
+" above, which is advice only."
+msgstr ""
+"What was actually requested/executed - separate from Recommended Response"
+" above, which is advice only."
+
+#: templates/alert_details.html:753
+msgid "Requested"
+msgstr "Requested"
+
+#: templates/alert_details.html:754 templates/dashboard.html:253
+#: templates/incident_details.html:552
+msgid "Command"
+msgstr "Command"
+
+#: templates/alert_details.html:755 templates/incident_details.html:554
+msgid "Requested By"
+msgstr "Requested By"
+
+#: templates/alert_details.html:757 templates/dashboard.html:254
+#: templates/incident_details.html:556
+msgid "Mode"
+msgstr "Mode"
+
+#: templates/alert_details.html:758 templates/incident_details.html:558
+msgid "Completed"
+msgstr "Completed"
+
+#: templates/alert_details.html:759 templates/incident_details.html:559
+msgid "Result"
+msgstr "Result"
+
+#: templates/alert_details.html:771 templates/incident_details.html:578
+msgid "SUCCESS"
+msgstr "SUCCESS"
+
+#: templates/alert_details.html:773 templates/incident_details.html:580
+msgid "FAILED"
+msgstr "FAILED"
+
+#: templates/alert_details.html:775 templates/incident_details.html:582
+msgid "PENDING"
+msgstr "PENDING"
+
+#: templates/alert_details.html:784 templates/dashboard.html:266
+#: templates/incident_details.html:569
+msgid "SIMULATED"
+msgstr "SIMULATED"
+
+#: templates/alert_details.html:786 templates/dashboard.html:264
+#: templates/incident_details.html:571
+msgid "ENFORCED"
+msgstr "ENFORCED"
+
+#: templates/alert_details.html:788 templates/incident_details.html:573
+msgid "awaiting Agent"
+msgstr "awaiting Agent"
+
+#: templates/alert_details.html:799
+msgid "No response action has been requested for this alert."
+msgstr "No response action has been requested for this alert."
+
+#: templates/alert_details.html:809
+msgid "Alert Workflow"
+msgstr "Alert Workflow"
+
+#: templates/alert_details.html:812
+msgid ""
+"Any logged-in Analyst or Admin may acknowledge, close, or manually "
+"escalate an alert."
+msgstr ""
+"Any logged-in Analyst or Admin may acknowledge, close, or manually "
+"escalate an alert."
+
+#: templates/alert_details.html:821
+msgid "Acknowledge"
+msgstr "Acknowledge"
+
+#: templates/alert_details.html:826
+msgid "Escalate this alert to a Security Incident?"
+msgstr "Escalate this alert to a Security Incident?"
+
+#: templates/alert_details.html:830
+msgid "Escalate to Incident"
+msgstr "Escalate to Incident"
+
+#: templates/alert_details.html:835
+msgid "Close this alert? It will no longer appear as an active alert."
+msgstr "Close this alert? It will no longer appear as an active alert."
+
+#: templates/alert_details.html:839
+msgid "Close Alert"
+msgstr "Close Alert"
+
+#: templates/alert_details.html:851 templates/incident_details.html:644
+msgid "Back to Security Alerts"
+msgstr "Back to Security Alerts"
+
+#: templates/alerts.html:3 templates/alerts.html:7
+msgid "Security Operations"
+msgstr "Security Operations"
+
+#: templates/alerts.html:10
+msgid ""
+"Monitor, investigate, and respond to security alerts and incidents across"
+" managed endpoints."
+msgstr ""
+"Monitor, investigate, and respond to security alerts and incidents across"
+" managed endpoints."
+
+#: templates/alerts.html:17 templates/dashboard.html:26
+msgid "Active Alerts"
+msgstr "Active Alerts"
+
+#: templates/alerts.html:22 templates/dashboard.html:31
+msgid "Open Incidents"
+msgstr "Open Incidents"
+
+#: templates/alerts.html:27
+msgid "High / Critical Open"
+msgstr "High / Critical Open"
+
+#: templates/alerts.html:32
+msgid "New Alerts Today"
+msgstr "New Alerts Today"
+
+#: templates/alerts.html:41 templates/base.html:40
+msgid "Security Alerts"
+msgstr "Security Alerts"
+
+#: templates/alerts.html:48 templates/alerts.html:58 templates/alerts.html:69
+#: templates/alerts.html:79
+msgid "All"
+msgstr "All"
+
+#: templates/alerts.html:67 templates/alerts.html:103
+#: templates/dashboard.html:96 templates/dashboard.html:252
+msgid "Endpoint"
+msgstr "Endpoint"
+
+#: templates/alerts.html:80
+msgid "Linked to Incident"
+msgstr "Linked to Incident"
+
+#: templates/alerts.html:81
+msgid "Not Linked"
+msgstr "Not Linked"
+
+#: templates/alerts.html:86
+msgid "Search"
+msgstr "Search"
+
+#: templates/alerts.html:87
+msgid "title, domain, endpoint..."
+msgstr "title, domain, endpoint..."
+
+#: templates/alerts.html:90
+msgid "Apply Filter"
+msgstr "Apply Filter"
+
+#: templates/alerts.html:91
+msgid "Clear"
+msgstr "Clear"
+
+#: templates/alerts.html:102
+msgid "Alert"
+msgstr "Alert"
+
+#: templates/alerts.html:105 templates/dashboard.html:98
+#: templates/process_event_detail.html:66
+msgid "Risk"
+msgstr "Risk"
+
+#: templates/alerts.html:193
+msgid "No security alerts match this filter."
+msgstr "No security alerts match this filter."
+
+#: templates/alerts.html:202
+msgid "Security Incidents"
+msgstr "Security Incidents"
+
+#: templates/alerts.html:213
+msgid "Type"
+msgstr "Type"
+
+#: templates/alerts.html:214
+msgid "Target / Context"
+msgstr "Target / Context"
+
+#: templates/alerts.html:216
+msgid "Created"
+msgstr "Created"
+
+#: templates/alerts.html:260
+msgid ""
+"Confirmed via endpoints.source=endpoint-agent - a genuinely agent-"
+"observed managed endpoint."
+msgstr ""
+"Confirmed via endpoints.source=endpoint-agent - a genuinely agent-"
+"observed managed endpoint."
+
+#: templates/alerts.html:260 templates/incident_details.html:224
+msgid "Managed Endpoint"
+msgstr "Managed Endpoint"
+
+#: templates/alerts.html:281 templates/dashboard.html:151
+#: templates/incident_details.html:142
+msgid "OPEN"
+msgstr "OPEN"
+
+#: templates/alerts.html:287 templates/dashboard.html:152
+#: templates/incident_details.html:144
+msgid "INVESTIGATING"
+msgstr "INVESTIGATING"
+
+#: templates/alerts.html:293 templates/incident_details.html:146
+msgid "RESOLVED"
+msgstr "RESOLVED"
+
+#: templates/alerts.html:314
+msgid "No security incidents detected."
+msgstr "No security incidents detected."
+
+#: templates/base.html:11
+msgid "SOC Security Monitoring & Response System"
+msgstr "SOC Security Monitoring & Response System"
+
+#: templates/base.html:28 templates/dashboard.html:3
+msgid "Dashboard"
+msgstr "Dashboard"
+
+#: templates/base.html:33 templates/executive_dashboard.html:3
+msgid "Executive Summary"
+msgstr "Executive Summary"
+
+#: templates/base.html:36
+msgid "Monitoring"
+msgstr "Monitoring"
+
+#: templates/base.html:45
+msgid "Incidents"
+msgstr "Incidents"
+
+#: templates/base.html:50
+msgid "Web / Endpoint Monitoring"
+msgstr "Web / Endpoint Monitoring"
+
+#: templates/base.html:55
+msgid "Network Events"
+msgstr "Network Events"
+
+#: templates/base.html:58 templates/base.html:62
+#: templates/incident_details.html:366
+msgid "Threat Intelligence"
+msgstr "Threat Intelligence"
+
+#: templates/base.html:67
+msgid "IP Reputation"
+msgstr "IP Reputation"
+
+#: templates/base.html:72 templates/threat_intel_health.html:3
+msgid "Threat Intel Health"
+msgstr "Threat Intel Health"
+
+#: templates/base.html:77 templates/process_events.html:3
+msgid "Process Events (Technical)"
+msgstr "Process Events (Technical)"
+
+#: templates/base.html:80
+msgid "Assessment"
+msgstr "Assessment"
+
+#: templates/base.html:84
+msgid "Network Scanner"
+msgstr "Network Scanner"
+
+#: templates/base.html:89
+msgid "Scan History"
+msgstr "Scan History"
+
+#: templates/base.html:94
+msgid "Assessment Reports"
+msgstr "Assessment Reports"
+
+#: templates/base.html:97
+msgid "Response"
+msgstr "Response"
+
+#: templates/base.html:106
+msgid "Organization Blocklist"
+msgstr "Organization Blocklist"
+
+#: templates/base.html:109
+msgid "Analytics"
+msgstr "Analytics"
+
+#: templates/base.html:113 templates/dashboard.html:65
+msgid "Security Analytics"
+msgstr "Security Analytics"
+
+#: templates/base.html:118
+msgid "Baseline Status"
+msgstr "Baseline Status"
+
+#: templates/base.html:123
+msgid "Security Reports"
+msgstr "Security Reports"
+
+#: templates/base.html:128
+msgid "Administration"
+msgstr "Administration"
+
+#: templates/base.html:132
+msgid "Audit Logs"
+msgstr "Audit Logs"
+
+#: templates/base.html:137
+msgid "User Management"
+msgstr "User Management"
+
+#: templates/base.html:143
+msgid "Logout"
+msgstr "Logout"
+
+#: templates/base.html:153 templates/login.html:23
+msgid "Language"
+msgstr "Language"
+
+#: templates/base.html:165
+msgid "Administrator"
+msgstr "Administrator"
+
+#: templates/base.html:167
+msgid "Analyst"
+msgstr "Analyst"
+
+#: templates/dashboard.html:11
+msgid "SOC Dashboard"
+msgstr "SOC Dashboard"
+
+#: templates/dashboard.html:14
+msgid "Cyber Security Monitoring, Detection & Response Platform"
+msgstr "Cyber Security Monitoring, Detection & Response Platform"
+
+#: templates/dashboard.html:21 templates/dashboard.html:395
+msgid "Latest Scan Security Score"
+msgstr "Latest Scan Security Score"
+
+#: templates/dashboard.html:36
+msgid "Critical Incidents"
+msgstr "Critical Incidents"
+
+#: templates/dashboard.html:41
+msgid "Monitored Endpoints"
+msgstr "Monitored Endpoints"
+
+#: templates/dashboard.html:46
+msgid "Isolated Endpoints"
+msgstr "Isolated Endpoints"
+
+#: templates/dashboard.html:51
+msgid "Blocked Destinations"
+msgstr "Blocked Destinations"
+
+#: templates/dashboard.html:56
+msgid "Active IOCs"
+msgstr "Active IOCs"
+
+#: templates/dashboard.html:70
+msgid "Alerts & Incidents by Severity"
+msgstr "Alerts & Incidents by Severity"
+
+#: templates/dashboard.html:75
+msgid "Latest Scan Security Score Trend"
+msgstr "Latest Scan Security Score Trend"
+
+#: templates/dashboard.html:86
+msgid "Recent Security Alerts"
+msgstr "Recent Security Alerts"
+
+#: templates/dashboard.html:93 templates/dashboard.html:137
+#: templates/dashboard.html:251 templates/process_event_detail.html:62
+msgid "Time"
+msgstr "Time"
+
+#: templates/dashboard.html:95 templates/dashboard.html:139
+msgid "Title"
+msgstr "Title"
+
+#: templates/dashboard.html:121
+msgid "No active alerts."
+msgstr "No active alerts."
+
+#: templates/dashboard.html:129
+msgid "Recent Incidents"
+msgstr "Recent Incidents"
+
+#: templates/dashboard.html:136
+msgid "ID"
+msgstr "ID"
+
+#: templates/dashboard.html:140 templates/dashboard.html:333
+#: templates/incident_details.html:553
+msgid "Target"
+msgstr "Target"
+
+#: templates/dashboard.html:160
+msgid "No open incidents."
+msgstr "No open incidents."
+
+#: templates/dashboard.html:168
+msgid "Endpoint Activity"
+msgstr "Endpoint Activity"
+
+#: templates/dashboard.html:171
+#, python-format
+msgid ""
+"An endpoint is shown as STALE if it has not reported in for more than "
+"%(minutes)s minutes (display hint only, based on last_seen)."
+msgstr ""
+"An endpoint is shown as STALE if it has not reported in for more than "
+"%(minutes)s minutes (display hint only, based on last_seen)."
+
+#: templates/dashboard.html:179
+msgid "IP Address"
+msgstr "IP Address"
+
+#: templates/dashboard.html:180
+msgid "Hostname"
+msgstr "Hostname"
+
+#: templates/dashboard.html:182
+msgid "Last Seen"
+msgstr "Last Seen"
+
+#: templates/dashboard.html:190
+msgid "ISOLATED"
+msgstr "ISOLATED"
+
+#: templates/dashboard.html:192
+msgid "STALE"
+msgstr "STALE"
+
+#: templates/dashboard.html:194
+msgid "CONNECTED"
+msgstr "CONNECTED"
+
+#: templates/dashboard.html:204
+msgid "No endpoints have reported yet."
+msgstr "No endpoints have reported yet."
+
+#: templates/dashboard.html:212
+msgid "Top Risky Destinations"
+msgstr "Top Risky Destinations"
+
+#: templates/dashboard.html:220
+msgid "Highest Risk Score"
+msgstr "Highest Risk Score"
+
+#: templates/dashboard.html:221
+msgid "Worst Severity Seen"
+msgstr "Worst Severity Seen"
+
+#: templates/dashboard.html:222
+msgid "Events"
+msgstr "Events"
+
+#: templates/dashboard.html:236
+msgid "No risky destinations recorded yet."
+msgstr "No risky destinations recorded yet."
+
+#: templates/dashboard.html:244
+msgid "Recent Response Actions"
+msgstr "Recent Response Actions"
+
+#: templates/dashboard.html:267
+msgid "pending"
+msgstr "pending"
+
+#: templates/dashboard.html:275
+msgid "View all Response Actions →"
+msgstr "View all Response Actions →"
+
+#: templates/dashboard.html:278
+msgid "No response actions have been requested yet."
+msgstr "No response actions have been requested yet."
+
+#: templates/dashboard.html:286
+msgid "Most Frequently Open Ports"
+msgstr "Most Frequently Open Ports"
+
+#: templates/dashboard.html:295
+msgid "Recent Scans"
+msgstr "Recent Scans"
+
+#: templates/dashboard.html:301
+msgid "Scan ID"
+msgstr "Scan ID"
+
+#: templates/dashboard.html:302 templates/incident_details.html:243
+msgid "Target IP"
+msgstr "Target IP"
+
+#: templates/dashboard.html:303
+msgid "Date & Time"
+msgstr "Date & Time"
+
+#: templates/dashboard.html:304
+msgid "User"
+msgstr "User"
+
+#: templates/dashboard.html:305
+msgid "Score"
+msgstr "Score"
+
+#: templates/dashboard.html:319
+msgid "No scans performed yet."
+msgstr "No scans performed yet."
+
+#: templates/dashboard.html:327
+msgid "Recent Scanner Findings"
+msgstr "Recent Scanner Findings"
+
+#: templates/dashboard.html:334
+msgid "Port"
+msgstr "Port"
+
+#: templates/dashboard.html:335
+msgid "Finding"
+msgstr "Finding"
+
+#: templates/dashboard.html:349
+msgid "No findings detected yet."
+msgstr "No findings detected yet."
+
+#: templates/dashboard.html:365
+msgid "Alerts & Incidents"
+msgstr "Alerts & Incidents"
+
+#: templates/dashboard.html:421
+msgid "Open Port Detections"
+msgstr "Open Port Detections"
+
+#: templates/executive_dashboard.html:11
+msgid "Executive Security Summary"
+msgstr "Executive Security Summary"
+
+#: templates/executive_dashboard.html:13
+msgid "A plain-language overview of your organization's security status."
+msgstr "A plain-language overview of your organization's security status."
+
+#: templates/executive_dashboard.html:14
+msgid "For full technical details, see the"
+msgstr "For full technical details, see the"
+
+#: templates/executive_dashboard.html:15
+msgid "technical Dashboard"
+msgstr "technical Dashboard"
+
+#: templates/executive_dashboard.html:20
+msgid "Today"
+msgstr "Today"
+
+#: templates/executive_dashboard.html:22
+msgid "This week"
+msgstr "This week"
+
+#: templates/executive_dashboard.html:24
+msgid "This month"
+msgstr "This month"
+
+#: templates/executive_dashboard.html:31
+msgid "Urgent security event"
+msgstr "Urgent security event"
+
+#: templates/executive_dashboard.html:32
+msgid ""
+"Something serious needs your attention right now. See the recommended "
+"actions below."
+msgstr ""
+"Something serious needs your attention right now. See the recommended "
+"actions below."
+
+#: templates/executive_dashboard.html:39
+msgid "Review needed"
+msgstr "Review needed"
+
+#: templates/executive_dashboard.html:40
+msgid ""
+"Some lower-priority items were found and should be reviewed when "
+"convenient."
+msgstr ""
+"Some lower-priority items were found and should be reviewed when "
+"convenient."
+
+#: templates/executive_dashboard.html:47
+msgid "No computers are currently registered for monitoring"
+msgstr "No computers are currently registered for monitoring"
+
+#: templates/executive_dashboard.html:48
+msgid ""
+"No data is available yet, so no statement can be made about your security"
+" status."
+msgstr ""
+"No data is available yet, so no statement can be made about your security"
+" status."
+
+#: templates/executive_dashboard.html:55
+msgid "No active threats detected"
+msgstr "No active threats detected"
+
+#: templates/executive_dashboard.html:56
+msgid ""
+"No open security issues were found among the computers currently being "
+"monitored."
+msgstr ""
+"No open security issues were found among the computers currently being "
+"monitored."
+
+#: templates/executive_dashboard.html:64
+msgid "Monitoring coverage is partial"
+msgstr "Monitoring coverage is partial"
+
+#: templates/executive_dashboard.html:65
+#, python-format
+msgid ""
+"%(not_reporting)s of %(total)s registered computers are not currently "
+"reporting in."
+msgstr ""
+"%(not_reporting)s of %(total)s registered computers are not currently "
+"reporting in."
+
+#: templates/executive_dashboard.html:71
+msgid "At a glance"
+msgstr "At a glance"
+
+#: templates/executive_dashboard.html:75
+msgid "Computers registered for monitoring"
+msgstr "Computers registered for monitoring"
+
+#: templates/executive_dashboard.html:79
+msgid "Reporting in right now"
+msgstr "Reporting in right now"
+
+#: templates/executive_dashboard.html:83
+msgid "Not currently reporting in"
+msgstr "Not currently reporting in"
+
+#: templates/executive_dashboard.html:87
+msgid "Open security issues"
+msgstr "Open security issues"
+
+#: templates/executive_dashboard.html:91
+msgid "Open investigations"
+msgstr "Open investigations"
+
+#: templates/executive_dashboard.html:96
+msgid "New issues – today"
+msgstr "New issues – today"
+
+#: templates/executive_dashboard.html:97
+msgid "New issues – this week"
+msgstr "New issues – this week"
+
+#: templates/executive_dashboard.html:98
+msgid "New issues – this month"
+msgstr "New issues – this month"
+
+#: templates/executive_dashboard.html:106
+msgid "Open issues by priority"
+msgstr "Open issues by priority"
+
+#: templates/executive_dashboard.html:107
+msgid "Counts only – see Recommended Actions below for what to do about them."
+msgstr "Counts only – see Recommended Actions below for what to do about them."
+
+#: templates/executive_dashboard.html:115
+msgid "High priority"
+msgstr "High priority"
+
+#: templates/executive_dashboard.html:119
+msgid "Medium priority"
+msgstr "Medium priority"
+
+#: templates/executive_dashboard.html:123
+msgid "Low priority"
+msgstr "Low priority"
+
+#: templates/executive_dashboard.html:130
+msgid "Recommended actions"
+msgstr "Recommended actions"
+
+#: templates/executive_dashboard.html:141
+msgid "Possible business impact:"
+msgstr "Possible business impact:"
+
+#: templates/executive_dashboard.html:144
+msgid "Recommended action:"
+msgstr "Recommended action:"
+
+#: templates/executive_dashboard.html:147
+#, python-format
+msgid "(and %(n)s more step(s) - see technical details)"
+msgstr "(and %(n)s more step(s) - see technical details)"
+
+#: templates/executive_dashboard.html:151
+msgid "View technical details →"
+msgstr "View technical details →"
+
+#: templates/executive_dashboard.html:156
+msgid "No actions are recommended right now."
+msgstr "No actions are recommended right now."
+
+#: templates/executive_dashboard.html:162
+msgid "Computers needing inspection"
+msgstr "Computers needing inspection"
+
+#: templates/executive_dashboard.html:166
+#: templates/executive_dashboard.html:192
+msgid "Computer"
+msgstr "Computer"
+
+#: templates/executive_dashboard.html:166
+#: templates/executive_dashboard.html:192
+msgid "Address"
+msgstr "Address"
+
+#: templates/executive_dashboard.html:169
+#: templates/executive_dashboard.html:195
+msgid "Unknown"
+msgstr "Unknown"
+
+#: templates/executive_dashboard.html:176
+#, python-format
+msgid "Showing the first %(n)s. See the technical Dashboard for the full list."
+msgstr "Showing the first %(n)s. See the technical Dashboard for the full list."
+
+#: templates/executive_dashboard.html:179
+msgid "No computers currently need inspection."
+msgstr "No computers currently need inspection."
+
+#: templates/executive_dashboard.html:186
+msgid "Computers not currently reporting in"
+msgstr "Computers not currently reporting in"
+
+#: templates/executive_dashboard.html:188
+msgid ""
+"A computer appears here if it hasn't checked in recently. This can mean "
+"it is turned off, disconnected from the network, or that monitoring "
+"software needs attention."
+msgstr ""
+"A computer appears here if it hasn't checked in recently. This can mean "
+"it is turned off, disconnected from the network, or that monitoring "
+"software needs attention."
+
+#: templates/executive_dashboard.html:192
+msgid "Last seen"
+msgstr "Last seen"
+
+#: templates/executive_dashboard.html:197
+msgid "Never"
+msgstr "Never"
+
+#: templates/executive_dashboard.html:203
+#, python-format
+msgid "Showing the first %(shown)s of %(total)s."
+msgstr "Showing the first %(shown)s of %(total)s."
+
+#: templates/executive_dashboard.html:210
+msgid "Trend – last 14 days"
+msgstr "Trend – last 14 days"
+
+#: templates/executive_dashboard.html:216
+msgid "Period summary"
+msgstr "Period summary"
+
+#: templates/executive_dashboard.html:220
+msgid "Security issues – last 7 days"
+msgstr "Security issues – last 7 days"
+
+#: templates/executive_dashboard.html:224
+msgid "Security issues – last 30 days"
+msgstr "Security issues – last 30 days"
+
+#: templates/executive_dashboard.html:228
+msgid "Investigations – last 7 days"
+msgstr "Investigations – last 7 days"
+
+#: templates/executive_dashboard.html:232
+msgid "Investigations – last 30 days"
+msgstr "Investigations – last 30 days"
+
+#: templates/incident_details.html:158
+#, python-format
+msgid "%(when)s by %(who)s"
+msgstr "%(when)s by %(who)s"
+
+#: templates/incident_details.html:173
+msgid "Incident Context / Origin"
+msgstr "Incident Context / Origin"
+
+#: templates/incident_details.html:181
+msgid "Affected Account"
+msgstr "Affected Account"
+
+#: templates/incident_details.html:185
+msgid "Detection Context"
+msgstr "Detection Context"
+
+#: templates/incident_details.html:186
+msgid "Authentication / SOC Login Security"
+msgstr "Authentication / SOC Login Security"
+
+#: templates/incident_details.html:190
+msgid ""
+"The source IP of the failed login attempts was not captured by the "
+"incident model at the time this incident was created."
+msgstr ""
+"The source IP of the failed login attempts was not captured by the "
+"incident model at the time this incident was created."
+
+#: templates/incident_details.html:191
+msgid "Source IP"
+msgstr "Source IP"
+
+#: templates/incident_details.html:194
+msgid "Not recorded"
+msgstr "Not recorded"
+
+#: templates/incident_details.html:202
+msgid "Suspicious IP"
+msgstr "Suspicious IP"
+
+#: templates/incident_details.html:211
+msgid "Analysis Performed By"
+msgstr "Analysis Performed By"
+
+#: templates/incident_details.html:215
+msgid "Origin"
+msgstr "Origin"
+
+#: templates/incident_details.html:216
+msgid "Manual IP Reputation Analysis"
+msgstr "Manual IP Reputation Analysis"
+
+#: templates/incident_details.html:236
+msgid "See Related Security Alerts below for destination/evidence context."
+msgstr "See Related Security Alerts below for destination/evidence context."
+
+#: templates/incident_details.html:253
+msgid ""
+"This IP is not confirmed as a Managed Endpoint (no matching agent-sourced"
+" endpoint record)."
+msgstr ""
+"This IP is not confirmed as a Managed Endpoint (no matching agent-sourced"
+" endpoint record)."
+
+#: templates/incident_details.html:258
+msgid "No target IP recorded for this incident."
+msgstr "No target IP recorded for this incident."
+
+#: templates/incident_details.html:270
+msgid "Detection & Evidence"
+msgstr "Detection & Evidence"
+
+#: templates/incident_details.html:275
+msgid "Exactly-matched audit log entries:"
+msgstr "Exactly-matched audit log entries:"
+
+#: templates/incident_details.html:289
+msgid "Related Security Alerts"
+msgstr "Related Security Alerts"
+
+#: templates/incident_details.html:312
+msgid "Remote Destination"
+msgstr "Remote Destination"
+
+#: templates/incident_details.html:345
+msgid "Guidance inherited from related Security Alert:"
+msgstr "Guidance inherited from related Security Alert:"
+
+#: templates/incident_details.html:355
+msgid "No Security Alert is structurally linked to this Incident."
+msgstr "No Security Alert is structurally linked to this Incident."
+
+#: templates/incident_details.html:376
+msgid "VirusTotal Malicious"
+msgstr "VirusTotal Malicious"
+
+#: templates/incident_details.html:380
+msgid "VirusTotal Suspicious"
+msgstr "VirusTotal Suspicious"
+
+#: templates/incident_details.html:384
+msgid "AbuseIPDB Confidence"
+msgstr "AbuseIPDB Confidence"
+
+#: templates/incident_details.html:388
+msgid "Abuse Reports"
+msgstr "Abuse Reports"
+
+#: templates/incident_details.html:392
+msgid "Local IOC"
+msgstr "Local IOC"
+
+#: templates/incident_details.html:395
+#, python-format
+msgid "Active (%(severity)s)"
+msgstr "Active (%(severity)s)"
+
+#: templates/incident_details.html:397
+msgid "No active local IOC match is recorded for this IP."
+msgstr "No active local IOC match is recorded for this IP."
+
+#: templates/incident_details.html:402
+msgid "Checked By"
+msgstr "Checked By"
+
+#: templates/incident_details.html:406
+msgid "Checked At"
+msgstr "Checked At"
+
+#: templates/incident_details.html:413
+msgid ""
+"This is the most recent stored reputation check for this IP; it is "
+"current data and is not proven to be the exact result available at the "
+"time this Incident was created."
+msgstr ""
+"This is the most recent stored reputation check for this IP; it is "
+"current data and is not proven to be the exact result available at the "
+"time this Incident was created."
+
+#: templates/incident_details.html:419
+msgid "No stored threat intelligence data is available for this IP."
+msgstr "No stored threat intelligence data is available for this IP."
+
+#: templates/incident_details.html:434
+msgid ""
+"Admin-only. Creates a command for the Endpoint Agent - nothing is "
+"enforced instantly (see Activity & Actions Taken below for the Mode the "
+"Agent actually reports)."
+msgstr ""
+"Admin-only. Creates a command for the Endpoint Agent - nothing is "
+"enforced instantly (see Activity & Actions Taken below for the Mode the "
+"Agent actually reports)."
+
+#: templates/incident_details.html:465 templates/incident_details.html:473
+msgid "Block Suspicious IP"
+msgstr "Block Suspicious IP"
+
+#: templates/incident_details.html:466
+msgid ""
+"Request the Endpoint Agent response system to block communication with "
+"this suspicious IP where the existing response architecture supports that"
+" target."
+msgstr ""
+"Request the Endpoint Agent response system to block communication with "
+"this suspicious IP where the existing response architecture supports that"
+" target."
+
+#: templates/incident_details.html:470
+msgid "Request blocking of this suspicious IP?"
+msgstr "Request blocking of this suspicious IP?"
+
+#: templates/incident_details.html:510
+msgid "No response action is applicable to this Incident."
+msgstr "No response action is applicable to this Incident."
+
+#: templates/incident_details.html:545
+msgid ""
+"What was actually requested/executed for this incident's "
+"endpoint/destination."
+msgstr ""
+"What was actually requested/executed for this incident's "
+"endpoint/destination."
+
+#: templates/incident_details.html:555
+msgid "Requested At"
+msgstr "Requested At"
+
+#: templates/incident_details.html:597
+msgid "No response action has been requested for this Incident."
+msgstr "No response action has been requested for this Incident."
+
+#: templates/incident_details.html:608 templates/incident_details.html:632
+msgid "Incident Workflow"
+msgstr "Incident Workflow"
+
+#: templates/incident_details.html:610
+msgid "Update investigation status."
+msgstr "Update investigation status."
+
+#: templates/incident_details.html:616
+msgid "Incident Status"
+msgstr "Incident Status"
+
+#: templates/incident_details.html:624
+msgid "Update Incident"
+msgstr "Update Incident"
+
+#: templates/incident_details.html:635
+msgid ""
+"Incident lifecycle management is restricted to administrators. You have "
+"read-only access."
+msgstr ""
+"Incident lifecycle management is restricted to administrators. You have "
+"read-only access."
+
+#: templates/login.html:11
+msgid "CyberSec Login"
+msgstr "CyberSec Login"
+
+#: templates/login.html:41
+msgid "Security Monitoring & Assessment System"
+msgstr "Security Monitoring & Assessment System"
+
+#: templates/login.html:47 templates/login.html:106
+msgid "Sign In"
+msgstr "Sign In"
+
+#: templates/login.html:68 templates/login.html:77
+msgid "Username"
+msgstr "Username"
+
+#: templates/login.html:88 templates/login.html:97
+msgid "Password"
+msgstr "Password"
+
+#: templates/login.html:115
+msgid "Authorized users only"
+msgstr "Authorized users only"
+
+#: templates/login.html:122
+msgid "Multiple failed login attempts may temporarily lock the account."
+msgstr "Multiple failed login attempts may temporarily lock the account."
+
+#: templates/process_event_detail.html:3
+msgid "Process Detail (Technical)"
+msgstr "Process Detail (Technical)"
+
+#: templates/process_event_detail.html:7
+msgid "Process Detail"
+msgstr "Process Detail"
+
+#: templates/process_event_detail.html:10
+msgid ""
+"Technical, read-only correlation view - Step 25B evidence/correlation "
+"only. No detection, no risk scoring, no alerts, no response."
+msgstr ""
+"Technical, read-only correlation view - Step 25B evidence/correlation "
+"only. No detection, no risk scoring, no alerts, no response."
+
+#: templates/process_event_detail.html:16
+msgid "No process found for this process_instance_id."
+msgstr "No process found for this process_instance_id."
+
+#: templates/process_event_detail.html:26 templates/process_events.html:22
+msgid "Endpoint:"
+msgstr "Endpoint:"
+
+#: templates/process_event_detail.html:29 templates/process_events.html:26
+msgid "Parent instance:"
+msgstr "Parent instance:"
+
+#: templates/process_event_detail.html:31 templates/process_events.html:28
+msgid "linked"
+msgstr "linked"
+
+#: templates/process_event_detail.html:33 templates/process_events.html:30
+msgid "unknown"
+msgstr "unknown"
+
+#: templates/process_event_detail.html:36 templates/process_events.html:33
+msgid "Start time:"
+msgstr "Start time:"
+
+#: templates/process_event_detail.html:37 templates/process_events.html:34
+msgid "Path:"
+msgstr "Path:"
+
+#: templates/process_event_detail.html:39 templates/process_events.html:36
+msgid "Command line:"
+msgstr "Command line:"
+
+#: templates/process_event_detail.html:42 templates/process_events.html:39
+msgid "redacted"
+msgstr "redacted"
+
+#: templates/process_event_detail.html:46 templates/process_events.html:44
+msgid "User:"
+msgstr "User:"
+
+#: templates/process_event_detail.html:51
+msgid "Network Activity"
+msgstr "Network Activity"
+
+#: templates/process_event_detail.html:53
+msgid ""
+"Only network events the server has independently verified as belonging to"
+" THIS exact process instance are listed here - never guessed from the "
+"process ID alone."
+msgstr ""
+"Only network events the server has independently verified as belonging to"
+" THIS exact process instance are listed here - never guessed from the "
+"process ID alone."
+
+#: templates/process_event_detail.html:57
+msgid "No correlated network activity yet for this process instance."
+msgstr "No correlated network activity yet for this process instance."
+
+#: templates/process_event_detail.html:64
+#, fuzzy
+msgid "Domain"
+msgstr "Command"
+
+#: templates/process_event_detail.html:65
+msgid "Protocol"
+msgstr "Protocol"
+
+#: templates/process_event_detail.html:67
+#, fuzzy
+msgid "Decision"
+msgstr "Destination"
+
+#: templates/process_event_detail.html:68
+msgid "Correlation"
+msgstr "Correlation"
+
+#: templates/process_event_detail.html:90
+msgid "Confirmed"
+msgstr "Confirmed"
+
+#: templates/process_event_detail.html:92
+msgid "Pending"
+msgstr "Pending"
+
+#: templates/process_events.html:7
+msgid "Process Events"
+msgstr "Process Events"
+
+#: templates/process_events.html:10
+msgid ""
+"Technical, read-only verification view - Step 25A collection foundation "
+"only. No detection, no risk scoring, no alerts."
+msgstr ""
+"Technical, read-only verification view - Step 25A collection foundation "
+"only. No detection, no risk scoring, no alerts."
+
+#: templates/process_events.html:15
+msgid ""
+"Command lines shown here have already been redacted (password/token"
+"/secret-style values removed) before storage."
+msgstr ""
+"Command lines shown here have already been redacted (password/token"
+"/secret-style values removed) before storage."
+
+#: templates/process_events.html:43
+msgid "Hash status:"
+msgstr "Hash status:"
+
+#: templates/process_events.html:45
+msgid "Received:"
+msgstr "Received:"
+
+#: templates/process_events.html:48
+msgid "View network activity for this process"
+msgstr "View network activity for this process"
+
+#: templates/process_events.html:57
+msgid "No process events collected yet."
+msgstr "No process events collected yet."
+
+#: templates/threat_intel_health.html:7
+msgid "Threat Intelligence Health"
+msgstr "Threat Intelligence Health"
+
+#: templates/threat_intel_health.html:10
+msgid "Local Threat Intelligence feed status - at a glance"
+msgstr "Local Threat Intelligence feed status - at a glance"
+
+#: templates/threat_intel_health.html:16
+msgid "Threat Intelligence:"
+msgstr "Threat Intelligence:"
+
+#: templates/threat_intel_health.html:18 templates/threat_intel_health.html:38
+msgid "Healthy"
+msgstr "Healthy"
+
+#: templates/threat_intel_health.html:20 templates/threat_intel_health.html:40
+msgid "Attention"
+msgstr "Attention"
+
+#: templates/threat_intel_health.html:22 templates/threat_intel_health.html:42
+msgid "Problem"
+msgstr "Problem"
+
+#: templates/threat_intel_health.html:26
+msgid ""
+"A source with no match found is never reported as \"safe\" - it only "
+"means this source did not flag anything."
+msgstr ""
+"A source with no match found is never reported as \"safe\" - it only "
+"means this source did not flag anything."
+
+#: templates/threat_intel_health.html:46
+msgid "Disabled"
+msgstr "Disabled"
+
+#: templates/threat_intel_health.html:48
+msgid "Enabled"
+msgstr "Enabled"
+
+#: templates/threat_intel_health.html:52
+msgid "This source may be refreshed automatically by the scheduler, when enabled"
+msgstr "This source may be refreshed automatically by the scheduler, when enabled"
+
+#: templates/threat_intel_health.html:52
+msgid "Automatic"
+msgstr "Automatic"
+
+#: templates/threat_intel_health.html:59
+msgid "Data status:"
+msgstr "Data status:"
+
+#: templates/threat_intel_health.html:61
+msgid "Current"
+msgstr "Current"
+
+#: templates/threat_intel_health.html:63
+msgid "Stale"
+msgstr "Stale"
+
+#: templates/threat_intel_health.html:65
+msgid "Never loaded"
+msgstr "Never loaded"
+
+#: templates/threat_intel_health.html:70
+msgid "Last update attempt:"
+msgstr "Last update attempt:"
+
+#: templates/threat_intel_health.html:72
+msgid "Success"
+msgstr "Success"
+
+#: templates/threat_intel_health.html:74
+msgid "Failed"
+msgstr "Failed"
+
+#: templates/threat_intel_health.html:76
+msgid "Never attempted"
+msgstr "Never attempted"
+
+#: templates/threat_intel_health.html:80
+msgid "Feed name:"
+msgstr "Feed name:"
+
+#: templates/threat_intel_health.html:81
+msgid "Current version:"
+msgstr "Current version:"
+
+#: templates/threat_intel_health.html:82
+msgid "Indicator count:"
+msgstr "Indicator count:"
+
+#: templates/threat_intel_health.html:84
+msgid "Last successful update:"
+msgstr "Last successful update:"
+
+#: templates/threat_intel_health.html:85
+msgid "Last attempt:"
+msgstr "Last attempt:"
+
+#: templates/threat_intel_health.html:86
+msgid "Next scheduled attempt:"
+msgstr "Next scheduled attempt:"
+
+#: templates/threat_intel_health.html:88
+msgid "Freshness threshold:"
+msgstr "Freshness threshold:"
+
+#: templates/threat_intel_health.html:88
+msgid "hours"
+msgstr "hours"
+
+#: templates/threat_intel_health.html:89
+msgid "Consecutive failures:"
+msgstr "Consecutive failures:"
+
+#: templates/threat_intel_health.html:93
+msgid "Last failure:"
+msgstr "Last failure:"
+
+#: templates/threat_intel_health.html:96
+msgid "technical detail"
+msgstr "technical detail"
+
+#: templates/threat_intel_health.html:105
+msgid "Licensing:"
+msgstr "Licensing:"
+
+#: templates/threat_intel_health.html:115
+msgid "No Local Threat Intelligence providers are registered yet."
+msgstr "No Local Threat Intelligence providers are registered yet."
+

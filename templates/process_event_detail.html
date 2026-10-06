@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _("Process Detail (Technical)") }}{% endblock %}
+
+{% block content %}
+
+    <h1>{{ _("Process Detail") }}</h1>
+
+    <p class="subtitle">
+        {{ _("Technical, read-only correlation view - Step 25B evidence/correlation only. No detection, no risk scoring, no alerts, no response.") }}
+    </p>
+
+    {% if not process %}
+
+    <div class="panel">
+        <p>{{ _("No process found for this process_instance_id.") }}</p>
+        <p class="wm-ip-mono"><bdi dir="ltr">{{ process_instance_id }}</bdi></p>
+    </div>
+
+    {% else %}
+
+    <div class="panel">
+        <h2>{{ _("Process") }}</h2>
+        <div class="wm-details-grid">
+            <div><strong>{{ _("Process:") }}</strong> {{ process["process_name"] or "-" }}</div>
+            <div><strong>{{ _("Endpoint:") }}</strong> <span class="wm-ip-mono"><bdi dir="ltr">{{ process["endpoint_ip"] }}</bdi></span></div>
+            <div><strong>PID:</strong> {{ process["pid"] }}</div>
+            <div><strong>PPID:</strong> {{ process["ppid"] if process["ppid"] is not none else "-" }}</div>
+            <div><strong>{{ _("Parent instance:") }}</strong>
+                {% if process["parent_process_instance_id"] %}
+                <a href="{{ url_for('process_event_detail_view', process_instance_id=process['parent_process_instance_id']) }}">{{ _("linked") }}</a>
+                {% else %}
+                <span class="badge badge-pending">{{ _("unknown") }}</span>
+                {% endif %}
+            </div>
+            <div><strong>{{ _("Start time:") }}</strong> <span class="wm-ip-mono"><bdi dir="ltr">{{ process["process_create_time"] }}</bdi></span></div>
+            <div style="grid-column: 1 / -1;"><strong>{{ _("Path:") }}</strong> <span class="wm-ip-mono"><bdi dir="ltr">{{ process["process_path"] or "-" }}</bdi></span></div>
+            <div style="grid-column: 1 / -1;">
+                <strong>{{ _("Command line:") }}</strong>
+                <span class="wm-ip-mono"><bdi dir="ltr">{{ process["command_line_text"] or "-" }}</bdi></span>
+                {% if process["command_line_was_redacted"] %}
+                <span class="badge badge-medium">{{ _("redacted") }}</span>
+                {% endif %}
+            </div>
+            <div><strong>SHA-256:</strong> <span class="wm-ip-mono"><bdi dir="ltr">{{ process["sha256"] or "-" }}</bdi></span></div>
+            <div><strong>{{ _("User:") }}</strong> {{ process["os_username"] or "-" }}</div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h2>{{ _("Network Activity") }}</h2>
+        <p style="color:#94a3b8; font-size:13px;">
+            {{ _("Only network events the server has independently verified as belonging to THIS exact process instance are listed here - never guessed from the process ID alone.") }}
+        </p>
+
+        {% if not network_events %}
+        <p>{{ _("No correlated network activity yet for this process instance.") }}</p>
+        {% else %}
+        <table class="wm-table">
+            <thead>
+                <tr>
+                    <th>{{ _("Time") }}</th>
+                    <th>{{ _("Destination") }}</th>
+                    <th>{{ _("Domain") }}</th>
+                    <th>{{ _("Protocol") }}</th>
+                    <th>{{ _("Risk") }}</th>
+                    <th>{{ _("Decision") }}</th>
+                    <th>{{ _("Correlation") }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ev in network_events %}
+                <tr>
+                    <td class="wm-ip-mono"><bdi dir="ltr">{{ ev["event_time"] }}</bdi></td>
+                    <td class="wm-ip-mono"><bdi dir="ltr">{{ ev["destination"] }}</bdi></td>
+                    <td>{{ ev["domain"] or "-" }}</td>
+                    <td>
+                        {{ ev["transport_protocol"] or "-" }}
+                        {% if ev["destination_port"] %}/{{ ev["destination_port"] }}{% endif %}
+                    </td>
+                    <td>
+                        {% if ev["severity"] %}
+                        <span class="badge badge-{{ ev['severity']|lower }}">{{ ev["severity"] }}</span>
+                        {% else %}-{% endif %}
+                        {{ ev["risk_score"] if ev["risk_score"] is not none else "" }}
+                    </td>
+                    <td>{{ ev["decision"] or "-" }}</td>
+                    <td>
+                        {% if ev["process_correlation_status"] == "CONFIRMED" %}
+                        <span class="badge badge-analyzed">{{ _("Confirmed") }}</span>
+                        {% elif ev["process_correlation_status"] == "PENDING" %}
+                        <span class="badge badge-pending">{{ _("Pending") }}</span>
+                        {% else %}
+                        <span class="badge badge-pending">{{ ev["process_correlation_status"] or "-" }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+
+    {% endif %}
+
+{% endblock %}

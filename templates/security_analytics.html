@@ -1,0 +1,708 @@
+{% extends "base.html" %}
+
+{% block title %}Security Analytics{% endblock %}
+
+{% block extra_head %}
+<script src="{{ url_for('static', filename='vendor/chart.min.js') }}"></script>
+<style>
+    .analytics-note {
+        color: #94a3b8;
+        font-size: 13px;
+        margin-top: 6px;
+    }
+    .analytics-chart-box {
+        max-width: 100%;
+        overflow-x: auto;
+    }
+    .analytics-doughnut-box {
+        max-width: 100%;
+        height: 320px;
+        position: relative;
+    }
+    .analytics-comparison-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-top: 12px;
+    }
+    .analytics-comparison-item {
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 10px;
+        padding: 14px;
+    }
+    .analytics-comparison-item .label {
+        color: #94a3b8;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    .analytics-comparison-item .values {
+        font-size: 20px;
+        font-weight: bold;
+        margin-top: 6px;
+    }
+    .analytics-comparison-item .change {
+        font-size: 13px;
+        margin-top: 4px;
+        color: #cbd5e1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<h1>Security Analytics</h1>
+
+<p class="subtitle">
+    Historical, read-only reporting over data the platform already collects
+    (analyzed telemetry, Alerts, Incidents, Response Actions). This is a
+    management/reporting view, not a real-time monitoring page — see Web
+    Monitoring for that.
+</p>
+
+{% if date_error %}
+<div class="login-error">{{ date_error }}</div>
+{% endif %}
+
+<div class="panel">
+
+    <h2>Time Range</h2>
+
+    <form method="GET" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
+
+        <div>
+            <label for="range">Range</label>
+            <select id="range" name="range" onchange="document.getElementById('custom-range-box').style.display = (this.value === 'custom') ? 'flex' : 'none';">
+                <option value="7d" {% if range_param == "7d" %}selected{% endif %}>Last 7 Days</option>
+                <option value="30d" {% if range_param == "30d" %}selected{% endif %}>Last 30 Days</option>
+                <option value="custom" {% if range_param == "custom" %}selected{% endif %}>Custom Date Range</option>
+            </select>
+        </div>
+
+        <div id="custom-range-box" style="display: {% if range_param == 'custom' %}flex{% else %}none{% endif %}; gap: 12px;">
+            <div>
+                <label for="start_date">Start Date</label>
+                <input id="start_date" type="date" name="start_date" value="{{ start_date }}">
+            </div>
+            <div>
+                <label for="end_date">End Date</label>
+                <input id="end_date" type="date" name="end_date" value="{{ end_date }}">
+            </div>
+        </div>
+
+        <button type="submit">Apply</button>
+        <a href="{{ url_for('security_analytics') }}" class="details-link">Clear</a>
+
+    </form>
+
+    <p class="analytics-note">
+        Showing {{ start_date }} to {{ end_date }}. All metrics and charts below
+        respect this range and are computed directly from stored timestamps —
+        no historical data is modified or recalculated.
+    </p>
+
+</div>
+
+<div class="cards">
+    <div class="card">
+        <h3>Endpoints Observed</h3>
+        <p class="number">{{ endpoints_observed }}</p>
+        <p class="analytics-note">Trusted (Agent-managed) endpoints with telemetry in range.</p>
+    </div>
+    <div class="card">
+        <h3>Users Observed</h3>
+        {% if users_observed_available %}
+        <p class="number">{{ users_observed }}</p>
+        <p class="analytics-note">Distinct attributed OS users (trusted endpoint telemetry) in range.</p>
+        {% else %}
+        <p class="analytics-note" style="margin-top: 10px;">No attributed endpoint users observed</p>
+        {% endif %}
+    </div>
+    <div class="card">
+        <h3>Risky Destinations</h3>
+        <p class="number">{{ risky_destinations }}</p>
+    </div>
+    <div class="card">
+        <h3>Endpoints Exposed to Risk</h3>
+        <p class="number">{{ endpoints_exposed }}</p>
+    </div>
+    <div class="card">
+        <h3>Security Alerts</h3>
+        <p class="number">{{ security_alerts_count }}</p>
+    </div>
+    <div class="card">
+        <h3>Security Incidents</h3>
+        <p class="number">{{ security_incidents_count }}</p>
+    </div>
+    <div class="card">
+        <h3>Response Actions</h3>
+        <p class="number">{{ response_actions_count }}</p>
+    </div>
+    <div class="card">
+        <h3>Block Actions</h3>
+        <p class="number">{{ block_actions_count }}</p>
+    </div>
+    <div class="card">
+        <h3>Isolation Actions</h3>
+        <p class="number">{{ isolation_actions_count }}</p>
+    </div>
+    <div class="card">
+        <h3>Observed Executable Hashes</h3>
+        <p class="number">{{ observed_hashes_count }}</p>
+        <p class="analytics-note">Distinct SHA-256 values observed (trusted endpoints).</p>
+    </div>
+    <div class="card">
+        <h3>Hash IOC Matches</h3>
+        <p class="number">{{ hash_ioc_matches_count }}</p>
+        <p class="analytics-note">Events where an observed hash matched an active local HASH IOC.</p>
+    </div>
+    <div class="card">
+        <h3>Script-Related Events</h3>
+        <p class="number">{{ script_related_events_count }}</p>
+        <p class="analytics-note">Interpreter/script-process telemetry — context only, not an alert trigger.</p>
+    </div>
+</div>
+
+<div class="panel">
+
+    <h2>Risk Activity Over Time</h2>
+    <p class="analytics-note">
+        Day-by-day counts of analyzed risky telemetry (risk_score &gt; 0, trusted
+        endpoints only), Alerts, and Incidents.
+    </p>
+
+    <div class="analytics-chart-box">
+        <canvas id="riskTrendChart" height="90"></canvas>
+    </div>
+
+</div>
+
+<div class="panel">
+
+    <h2>Top Endpoints by Risk Activity</h2>
+    <p class="analytics-note">
+        Ranked by the highest single stored event risk score observed in this
+        period — not a persistent, calculated endpoint risk score.
+    </p>
+
+    {% if top_endpoints %}
+    <div style="overflow-x: auto;">
+    <table>
+        <tr>
+            <th>Endpoint</th>
+            <th>Hostname</th>
+            <th>Risk Events</th>
+            <th>Alerts</th>
+            <th>Incidents</th>
+            <th>Highest Observed Event Risk</th>
+            <th>Last Activity</th>
+        </tr>
+        {% for ep in top_endpoints %}
+        <tr>
+            <td class="wm-ip-cell">
+                <span class="wm-ip-inline">
+                    <span class="wm-ip-mono{% if ep.endpoint_ip|length > 15 %} wm-ip-long{% endif %}" title="{{ ep.endpoint_ip }}">{{ ep.endpoint_ip }}</span>
+                    <button type="button" class="wm-copy-btn" data-ip="{{ ep.endpoint_ip }}" onclick="wmCopyIp(this)" title="Copy IP address">Copy</button>
+                </span>
+            </td>
+            <td>{{ ep.hostname or "-" }}</td>
+            <td>{{ ep.risk_events }}</td>
+            <td>{{ ep.alerts }}</td>
+            <td>{{ ep.incidents }}</td>
+            <td>
+                {{ ep.highest_observed_event_risk }}/100
+                <span class="severity-{{ ep.highest_observed_event_severity|lower }}">{{ ep.highest_observed_event_severity }}</span>
+            </td>
+            <td>{{ ep.last_activity }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    </div>
+    {% else %}
+    <p>No risk-associated endpoint activity in the selected period.</p>
+    {% endif %}
+
+</div>
+
+<div class="panel">
+
+    <h2>Users Associated with Risk Activity</h2>
+    <p class="analytics-note">
+        OS users associated with endpoint activity that produced a risk-scored
+        event in this period — this is activity association, not proof that
+        the human user intentionally visited a destination or caused the
+        security event.
+    </p>
+
+    {% if users_at_risk %}
+    <div style="overflow-x: auto;">
+    <table>
+        <tr>
+            <th>OS User</th>
+            <th>Endpoints</th>
+            <th>Risk Events</th>
+            <th>Alerts</th>
+            <th>Highest Observed Event Risk</th>
+        </tr>
+        {% for u in users_at_risk %}
+        <tr>
+            <td>{{ u.os_username }}</td>
+            <td>{{ u.endpoints }}</td>
+            <td>{{ u.risk_events }}</td>
+            <td>{{ u.alerts }}</td>
+            <td>
+                {{ u.highest_observed_event_risk }}/100
+                <span class="severity-{{ u.highest_observed_event_severity|lower }}">{{ u.highest_observed_event_severity }}</span>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    </div>
+    {% else %}
+    <p>No user-associated risk activity in the selected period.</p>
+    {% endif %}
+
+</div>
+
+<div class="panel">
+
+    <h2>Top Risky Destinations</h2>
+
+    {% if top_destinations %}
+    <div style="overflow-x: auto;">
+    <table>
+        <tr>
+            <th>Destination</th>
+            <th>Endpoints Affected</th>
+            <th>Event Count</th>
+            <th>Highest Risk</th>
+            <th>Highest Severity</th>
+            <th>Local IOC Evidence</th>
+            <th>Last Seen</th>
+        </tr>
+        {% for dest in top_destinations %}
+        <tr>
+            <td class="wm-ip-cell">
+                {% if dest.has_hostname %}
+                    {{ dest.domain }}
+                    {% if dest.resolved_ip %}
+                    <br>
+                    <span class="wm-ip-inline">
+                        <span class="wm-ip-mono{% if dest.resolved_ip|length > 15 %} wm-ip-long{% endif %}" title="{{ dest.resolved_ip }}">{{ dest.resolved_ip }}</span>
+                        <button type="button" class="wm-copy-btn" data-ip="{{ dest.resolved_ip }}" onclick="wmCopyIp(this)" title="Copy IP address">Copy</button>
+                    </span>
+                    {% endif %}
+                {% else %}
+                <span class="wm-ip-inline">
+                    <span class="wm-ip-mono{% if dest.destination_label|length > 15 %} wm-ip-long{% endif %}" title="{{ dest.destination_label }}">{{ dest.destination_label }}</span>
+                    <button type="button" class="wm-copy-btn" data-ip="{{ dest.destination_label }}" onclick="wmCopyIp(this)" title="Copy IP address">Copy</button>
+                </span>
+                {% endif %}
+            </td>
+            <td>{{ dest.endpoints_affected }}</td>
+            <td>{{ dest.event_count }}</td>
+            <td>{{ dest.highest_risk }}/100</td>
+            <td><span class="severity-{{ dest.highest_severity|lower }}">{{ dest.highest_severity }}</span></td>
+            <td>
+                {% if dest.local_ioc %}
+                <span class="severity-{{ dest.local_ioc.severity|lower }}">Active ({{ dest.local_ioc.indicator_type }}, {{ dest.local_ioc.severity }})</span>
+                {% else %}
+                -
+                {% endif %}
+            </td>
+            <td>{{ dest.last_seen }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    </div>
+    {% else %}
+    <p>No risky destinations observed in the selected period.</p>
+    {% endif %}
+
+</div>
+
+<div class="panel">
+
+    <h2>Severity Distribution</h2>
+
+    <p class="analytics-note">
+        Two separate datasets — never mixed. "Analyzed Web Events" reflects raw
+        analyzed telemetry (trusted endpoints only); "Security Alerts" reflects
+        Alerts actually raised. Values that were still awaiting analysis
+        (PENDING) are excluded from the Web Events dataset.
+    </p>
+
+    <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+        <div class="analytics-doughnut-box" style="flex: 1 1 320px;">
+            <h3 style="color: #cbd5e1; font-size: 14px;">Analyzed Web Events by Severity</h3>
+            <canvas id="webEventSeverityChart"></canvas>
+        </div>
+        <div class="analytics-doughnut-box" style="flex: 1 1 320px;">
+            <h3 style="color: #cbd5e1; font-size: 14px;">Security Alerts by Severity</h3>
+            <canvas id="alertSeverityChart"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<div class="panel">
+
+    <h2>Response Action Statistics</h2>
+
+    <div style="display: flex; gap: 32px; flex-wrap: wrap;">
+        <div>
+            <h3 style="color: #cbd5e1; font-size: 14px;">By Command Type</h3>
+            {% if response_by_command_type %}
+            <table>
+                {% for row in response_by_command_type %}
+                <tr><td>{{ row.command_type }}</td><td>{{ row.c }}</td></tr>
+                {% endfor %}
+            </table>
+            {% else %}
+            <p>No response commands in the selected period.</p>
+            {% endif %}
+        </div>
+        <div>
+            <h3 style="color: #cbd5e1; font-size: 14px;">By Status</h3>
+            {% if response_by_status %}
+            <table>
+                {% for row in response_by_status %}
+                <tr><td>{{ row.status }}</td><td>{{ row.c }}</td></tr>
+                {% endfor %}
+            </table>
+            {% else %}
+            <p>No response commands in the selected period.</p>
+            {% endif %}
+        </div>
+        <div>
+            <h3 style="color: #cbd5e1; font-size: 14px;">By Actual Agent-Reported Mode</h3>
+            <p class="analytics-note" style="margin-top: 0;">
+                Only counts commands where the Agent has actually reported a
+                mode — requested intent is never shown here as if it were the
+                real outcome.
+            </p>
+            {% if response_by_mode %}
+            <table>
+                {% for row in response_by_mode %}
+                <tr>
+                    <td>
+                        {% if row.mode == "ENFORCED" %}
+                        <span class="mode-badge mode-badge-enforced">ENFORCED</span>
+                        {% else %}
+                        <span class="mode-badge mode-badge-simulated">SIMULATED</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ row.c }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+            {% else %}
+            <p>No Agent-reported outcomes in the selected period.</p>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+<div class="panel">
+
+    <h2>Weekly / Period Security Summary</h2>
+
+    <p class="analytics-note">
+        Rule-based summary generated from stored statistics for the selected
+        period — not AI-generated.
+    </p>
+
+    <p>During the selected reporting period ({{ start_date }} to {{ end_date }}):</p>
+    <ul>
+        <li>{{ endpoints_observed }} managed endpoint(s) produced telemetry.</li>
+        <li>{{ risky_destinations }} risky destination(s) were observed.</li>
+        <li>{{ endpoints_exposed }} endpoint(s) were associated with risky activity.</li>
+        <li>{{ security_alerts_count }} security alert(s) were generated.</li>
+        <li>{{ security_incidents_count }} incident(s) were created.</li>
+        <li>{{ response_actions_count }} response action(s) were requested.</li>
+        <li>{{ response_success_count }} action(s) completed successfully.</li>
+        <li>{{ response_failed_count }} action(s) failed.</li>
+        {% if top_endpoint_summary_line %}
+        <li>{{ top_endpoint_summary_line }}</li>
+        {% endif %}
+    </ul>
+
+</div>
+
+<div class="panel">
+
+    <h2>Previous Period Comparison</h2>
+    <p class="analytics-note">Selected period vs. the immediately preceding, equal-length period.</p>
+
+    <div class="analytics-comparison-grid">
+        <div class="analytics-comparison-item">
+            <div class="label">Alerts</div>
+            <div class="values">{{ period_comparison.alerts.current }} <span style="color:#94a3b8; font-size: 14px;">vs {{ period_comparison.alerts.previous }}</span></div>
+            <div class="change">{{ period_comparison.alerts.change }}</div>
+        </div>
+        <div class="analytics-comparison-item">
+            <div class="label">Incidents</div>
+            <div class="values">{{ period_comparison.incidents.current }} <span style="color:#94a3b8; font-size: 14px;">vs {{ period_comparison.incidents.previous }}</span></div>
+            <div class="change">{{ period_comparison.incidents.change }}</div>
+        </div>
+        <div class="analytics-comparison-item">
+            <div class="label">Risky Events</div>
+            <div class="values">{{ period_comparison.risky_events.current }} <span style="color:#94a3b8; font-size: 14px;">vs {{ period_comparison.risky_events.previous }}</span></div>
+            <div class="change">{{ period_comparison.risky_events.change }}</div>
+        </div>
+        <div class="analytics-comparison-item">
+            <div class="label">Response Actions</div>
+            <div class="values">{{ period_comparison.response_actions.current }} <span style="color:#94a3b8; font-size: 14px;">vs {{ period_comparison.response_actions.previous }}</span></div>
+            <div class="change">{{ period_comparison.response_actions.change }}</div>
+        </div>
+    </div>
+
+</div>
+
+<div class="panel">
+
+    <h2>Behavioral Analytics</h2>
+    <p class="analytics-note">
+        Independent from Threat Risk above. "Unusual" means unusual compared with an
+        endpoint's own previously observed activity — it is not a threat verdict. An
+        event can be Threat Risk: HIGH and Behavior: TYPICAL, or Threat Risk: INFO and
+        Behavior: UNUSUAL, at the same time.
+    </p>
+
+    <div class="cards">
+        <div class="card">
+            <h3>Behaviorally Unusual Events</h3>
+            <p class="number">{{ behaviorally_unusual_events_count }}</p>
+        </div>
+        <div class="card">
+            <h3>Endpoints with Unusual Activity</h3>
+            <p class="number">{{ endpoints_with_unusual_activity_count }}</p>
+        </div>
+        <div class="card">
+            <h3>Distinct Processes in Baseline</h3>
+            <p class="number">{{ new_processes_observed_count }}</p>
+        </div>
+        <div class="card">
+            <h3>Distinct Destinations in Baseline</h3>
+            <p class="number">{{ new_destinations_observed_count }}</p>
+        </div>
+        <div class="card">
+            <h3>Distinct Process-Destination Relationships in Baseline</h3>
+            <p class="number">{{ new_process_destination_relationships_count }}</p>
+        </div>
+    </div>
+    <p class="analytics-note">
+        Baseline inventory includes trusted historical training observations and live observations.
+    </p>
+
+    <h3 style="margin-top: 20px;">Endpoints with Unusual Activity</h3>
+
+    {% if endpoints_with_unusual_activity %}
+    <div style="overflow-x: auto;">
+    <table>
+        <tr>
+            <th>Endpoint</th>
+            <th>Hostname</th>
+            <th>OS User</th>
+            <th>Unusual Events</th>
+            <th>Highest Observed Anomaly Score</th>
+            <th>Baseline Confidence</th>
+            <th>Last Unusual Activity</th>
+        </tr>
+        {% for ep in endpoints_with_unusual_activity %}
+        <tr>
+            <td class="wm-ip-cell">
+                <span class="wm-ip-inline">
+                    <span class="wm-ip-mono{% if ep.endpoint_ip|length > 15 %} wm-ip-long{% endif %}" title="{{ ep.endpoint_ip }}">{{ ep.endpoint_ip }}</span>
+                    <button type="button" class="wm-copy-btn" data-ip="{{ ep.endpoint_ip }}" onclick="wmCopyIp(this)" title="Copy IP address">Copy</button>
+                </span>
+            </td>
+            <td>{{ ep.hostname or "-" }}</td>
+            <td>{{ ep.os_username or "-" }}</td>
+            <td>{{ ep.unusual_events }}</td>
+            <td>{{ ep.highest_anomaly_score }}/100</td>
+            <td>{{ ep.baseline_confidence }}</td>
+            <td>{{ ep.last_unusual_activity }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    </div>
+    {% else %}
+    <p>No endpoints with unusual behavioral activity in the selected period.</p>
+    {% endif %}
+
+</div>
+
+<div class="panel">
+
+    <h2>Threat Intelligence &amp; Prioritization</h2>
+    <p class="analytics-note">
+        ThreatFox (external) evidence is indicator-based, not event-based - "ThreatFox
+        Matches" and "Indicators Enriched" count distinct indicators looked up in this
+        period, not events. "Investigation Priority" below is computed from the actual
+        analyzed events in this period. Investigation Priority is analyst-facing context
+        only - it never replaces Threat Risk or Behavioral Anomaly, and never triggers
+        automatic action.
+    </p>
+
+    <div class="cards">
+        <div class="card">
+            <h3>ThreatFox Matches</h3>
+            <p class="number">{{ threatfox_matches_count }}</p>
+            <p class="analytics-note">Distinct indicators with a MATCH lookup in range.</p>
+        </div>
+        <div class="card">
+            <h3>Indicators Enriched</h3>
+            <p class="number">{{ indicators_enriched_count }}</p>
+            <p class="analytics-note">Distinct indicators looked up (any outcome) in range.</p>
+        </div>
+        <div class="card">
+            <h3>Priority: Routine</h3>
+            <p class="number">{{ priority_distribution.ROUTINE }}</p>
+        </div>
+        <div class="card">
+            <h3>Priority: Review</h3>
+            <p class="number">{{ priority_distribution.REVIEW }}</p>
+        </div>
+        <div class="card">
+            <h3>Priority: Elevated</h3>
+            <p class="number">{{ priority_distribution.ELEVATED }}</p>
+        </div>
+        <div class="card">
+            <h3>Priority: Urgent</h3>
+            <p class="number">{{ priority_distribution.URGENT }}</p>
+        </div>
+    </div>
+
+    <h3 style="margin-top: 20px;">Recent ThreatFox Matches</h3>
+
+    {% if recent_threatfox_matches %}
+    <div style="overflow-x: auto;">
+    <table>
+        <tr>
+            <th>Provider</th>
+            <th>Indicator</th>
+            <th>Type</th>
+            <th>Threat Type</th>
+            <th>Malware Family</th>
+            <th>Retrieved</th>
+        </tr>
+        {% for match in recent_threatfox_matches %}
+        <tr>
+            <td>{{ match.provider }}</td>
+            <td>{{ match.indicator_value }}</td>
+            <td>{{ match.indicator_type }}</td>
+            <td>{{ match.threat_type or "-" }}</td>
+            <td>{{ match.malware_family or "-" }}</td>
+            <td>{{ match.retrieved_at }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    </div>
+    {% else %}
+    <p>No ThreatFox matches retrieved in the selected period.</p>
+    {% endif %}
+
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function wmCopyIp(button) {
+    var ip = button.getAttribute("data-ip");
+    if (!ip || !navigator.clipboard || !navigator.clipboard.writeText) {
+        return;
+    }
+    navigator.clipboard.writeText(ip).then(function () {
+        var original = button.innerHTML;
+        button.innerHTML = "&#10003;";
+        setTimeout(function () {
+            button.innerHTML = original;
+        }, 1200);
+    });
+}
+
+const trendLabels = {{ trend_labels | tojson }};
+
+new Chart(document.getElementById("riskTrendChart"), {
+    type: "line",
+    data: {
+        labels: trendLabels,
+        datasets: [
+            {
+                label: "Analyzed Risky Events",
+                data: {{ trend_risky_events | tojson }},
+                borderColor: "#f59e0b",
+                backgroundColor: "rgba(245, 158, 11, 0.12)",
+                tension: 0.3,
+                fill: true
+            },
+            {
+                label: "Alerts",
+                data: {{ trend_alerts | tojson }},
+                borderColor: "#ef4444",
+                backgroundColor: "rgba(239, 68, 68, 0.12)",
+                tension: 0.3,
+                fill: true
+            },
+            {
+                label: "Incidents",
+                data: {{ trend_incidents | tojson }},
+                borderColor: "#38bdf8",
+                backgroundColor: "rgba(56, 189, 248, 0.12)",
+                tension: 0.3,
+                fill: true
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: { beginAtZero: true, ticks: { color: "#cbd5e1", precision: 0 }, grid: { color: "#334155" } },
+            x: { ticks: { color: "#cbd5e1" }, grid: { color: "#334155" } }
+        },
+        plugins: { legend: { labels: { color: "#ffffff" } } }
+    }
+});
+
+const severityLabels = {{ severity_bands | tojson }};
+const severityColors = ["#38bdf8", "#eab308", "#f59e0b", "#ef4444", "#450a0a"];
+
+new Chart(document.getElementById("webEventSeverityChart"), {
+    type: "doughnut",
+    data: {
+        labels: severityLabels,
+        datasets: [{
+            data: {{ web_event_severity_values | tojson }},
+            backgroundColor: severityColors,
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: "#ffffff" } } }
+    }
+});
+
+new Chart(document.getElementById("alertSeverityChart"), {
+    type: "doughnut",
+    data: {
+        labels: severityLabels,
+        datasets: [{
+            data: {{ alert_severity_values | tojson }},
+            backgroundColor: severityColors,
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: "#ffffff" } } }
+    }
+});
+</script>
+{% endblock %}

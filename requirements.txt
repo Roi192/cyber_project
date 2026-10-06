@@ -1,0 +1,33 @@
+# ==================================================
+# Cyber Security Monitoring & Response Platform
+# Python dependencies
+# ==================================================
+# Installed and verified in the project's own venv (see Phase 10
+# fresh-install test). Only packages actually imported by the
+# codebase are listed - standard-library modules (json, os,
+# sqlite3, threading, queue, subprocess, ipaddress, hmac, etc.)
+# need no entry here.
+#
+# Install with:
+#   python -m pip install -r requirements.txt
+
+Flask==3.1.3
+Flask-WTF==1.3.0
+Werkzeug==3.1.8
+requests==2.34.2
+python-dotenv==1.2.3
+psutil==7.2.2
+reportlab==5.0.1
+
+# Oct 2026 Step 23: central i18n (Hebrew/English, gettext-based catalogs,
+# RTL/LTR). Pulls in Babel (the extraction/compilation toolchain, exposed
+# as the `pybabel` CLI) and pytz as its own dependencies.
+Flask-Babel==4.0.0
+
+# Production-style WSGI server for Linux/Kali deployment only.
+# gunicorn relies on os.fork() and does not run on Windows - the
+# Windows development workflow (python app.py) does not need it,
+# but it is listed here so `pip install -r requirements.txt`
+# prepares a Linux server host in one step. See README "Server
+# Startup Model" for exact usage.
+gunicorn==26.2.0

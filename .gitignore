@@ -1,0 +1,38 @@
+.env
+.env.demo
+venv/
+__pycache__/
+*.pyc
+
+# SQLite database and timestamped backups - contains real project
+# data (users, alerts, incidents, audit logs) and must never be
+# committed. A fresh cybersec.db is created automatically on first
+# startup from an empty repo checkout (see init_db()).
+*.db
+
+# Phase 13B: normalized telemetry files and the structured ingest log
+# (runtime data, never committed)
+data/
+
+# --- Added when preparing the public GitHub repo ---
+# Secrets: every real/backup env file (only *.example templates are committed)
+.env.*
+!.env.example
+!.env.demo.example
+# SQLite sidecar files and any DB-like artifacts
+*.db-shm
+*.db-wal
+*.sqlite*
+# Timestamped DB/rollback snapshots and old source copies (large, historical)
+backups_*/
+rollback_*/
+# Runtime state, logs, certificates/keys
+worker_status/
+logs/
+*.log
+*.pem
+*.key
+# Editor / OS
+.vscode/
+.idea/
+Thumbs.db

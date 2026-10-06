@@ -1,0 +1,56 @@
+{# Phase 12B.6B: provider-evidence table for the Investigation page ONLY.
+   Existing Web Monitoring / Alert Details markup is intentionally untouched.
+   Inputs: ti (threat_intelligence dict). No safe-filter: every value is escaped. #}
+{% if ti.stored %}
+<div style="overflow-x: auto;">
+<table class="inv-table">
+    <thead>
+        <tr>
+            <th>Source</th>
+            <th>Provider</th>
+            <th>Indicator</th>
+            <th>Lookup status</th>
+            <th>Classification</th>
+            <th>Evidence</th>
+            <th>Provider evidence retrieved</th>
+            <th>Expires</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for evidence in ti.stored %}
+        <tr>
+            <td><span class="inv-badge inv-src-THREAT_INTEL">{{ inv.source_labels["THREAT_INTEL"] }}</span></td>
+            <td style="text-transform: capitalize;">{{ evidence.provider }}</td>
+            <td class="inv-mono">{{ evidence.indicator_value }} <span class="inv-muted">({{ evidence.indicator_type }})</span></td>
+            <td>
+                {% if evidence.lookup_status == "MATCH" %}Match
+                {% elif evidence.lookup_status == "NO_MATCH" %}No match
+                {% elif evidence.lookup_status == "RATE_LIMITED" %}Temporarily rate limited
+                {% else %}Lookup unavailable{% endif %}
+            </td>
+            <td>{{ evidence.classification or "-" }}</td>
+            <td>
+                {% if evidence.lookup_status in ["MATCH", "NO_MATCH"] %}
+                    {{ evidence.summary or evidence.threat_type or evidence.malware_family or "-" }}
+                {% else %}-{% endif %}
+            </td>
+            <td>{{ evidence.retrieved_at or "-" }}</td>
+            <td>{{ evidence.expires_at or "-" }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{% else %}
+<p class="inv-muted">No provider evidence is stored for this event's indicators.</p>
+{% endif %}
+
+{% set pending_rows = ti.pending | selectattr("lookup_status", "in", ["NO_STORED_EVIDENCE", "NOT_CONFIGURED"]) | list %}
+{% if pending_rows %}
+<p class="inv-muted" style="margin-block-start: 10px;">
+    No stored evidence (not a negative result):
+    {% for p in pending_rows %}
+        <span class="inv-chip">{{ p.provider }} &middot; {{ p.indicator_type }} {{ p.indicator_value }}{% if p.lookup_status == "NOT_CONFIGURED" %} (not configured){% endif %}</span>
+    {% endfor %}
+</p>
+{% endif %}

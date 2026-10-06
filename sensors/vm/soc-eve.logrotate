@@ -1,0 +1,16 @@
+# Reference only. The Kali suricata package normally ships /etc/logrotate.d/suricata already: compare, do not blindly overwrite
+# (see docs/SURICATA_SENSOR_HARDENING.md). New files must keep the restrictive model: root:soc-eve 0640.
+# The adapter follows both rename-style rotation (this file) and copytruncate.
+/var/log/suricata/eve.json {
+    daily
+    rotate 7
+    missingok
+    compress
+    delaycompress
+    notifempty
+    create 0640 root soc-eve
+    sharedscripts
+    postrotate
+        /usr/bin/systemctl kill -s HUP --kill-whom=main suricata.service >/dev/null 2>&1 || true
+    endscript
+}

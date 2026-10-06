@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Scan Details{% endblock %}
+
+{% block content %}
+
+    <h1>Scan Details</h1>
+
+    <p class="subtitle">
+        Security Assessment Result
+    </p>
+
+
+    <div class="panel">
+
+        <h2>
+            Scan #{{ scan.id }}
+        </h2>
+
+        <p>
+            Target:
+            <strong>{{ scan.target_ip }}</strong>
+        </p>
+
+        <p>
+            Date:
+            <strong>{{ scan.scan_time }}</strong>
+        </p>
+
+        <p>
+            Security Score:
+            <strong>{{ scan.security_score }}/100</strong>
+        </p>
+
+    </div>
+
+
+    <div class="panel">
+
+        <h2>Port Results</h2>
+
+        <table>
+
+            <tr>
+                <th>Port</th>
+                <th>Service</th>
+                <th>Status</th>
+            </tr>
+
+            {% for item in results %}
+
+            <tr>
+
+                <td>
+                    {{ item.port }}
+                </td>
+
+                <td>
+                    {{ item.service }}
+                </td>
+
+                <td>
+
+                    {% if item.status == "OPEN" %}
+
+                    <span class="status-open">
+                        OPEN
+                    </span>
+
+                    {% else %}
+
+                    <span class="status-closed">
+                        CLOSED
+                    </span>
+
+                    {% endif %}
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+
+    <div class="panel">
+
+        <h2>Security Findings</h2>
+
+
+        {% if findings %}
+
+            {% for finding in findings %}
+
+            <div class="finding">
+
+                <h3>
+                    {{ finding.title }}
+                </h3>
+
+                <p>
+
+                    Severity:
+
+                    <span class="severity-{{ finding.severity|lower }}">
+
+                        {{ finding.severity }}
+
+                    </span>
+
+                </p>
+
+                <p>
+                    Port:
+                    {{ finding.port }}
+                </p>
+
+                <p>
+                    {{ finding.description }}
+                </p>
+
+                <p>
+                    Score Penalty:
+                    -{{ finding.score_penalty }}
+                </p>
+
+            </div>
+
+            {% endfor %}
+
+        {% else %}
+
+        <p>
+            No findings detected.
+        </p>
+
+        {% endif %}
+
+    </div>
+
+
+    <a class="details-link"
+       href="/history">
+
+        ← Back to History
+
+    </a>
+
+{% endblock %}

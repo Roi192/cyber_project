@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Error {{ code }}{% endblock %}
+
+{% block content %}
+
+<h1>Error {{ code }}</h1>
+
+<div class="panel">
+    <p>{{ message }}</p>
+    <p><a href="/" class="details-link">← Back to Dashboard</a></p>
+</div>
+
+{% endblock %}

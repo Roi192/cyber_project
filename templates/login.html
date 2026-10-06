@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="{{ get_locale() }}" dir="{{ 'rtl' if is_rtl() else 'ltr' }}">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>{{ _("CyberSec Login") }}</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+<body>
+
+
+<div class="login-page">
+
+    <div class="lang-switch login-lang-switch" role="group" aria-label="{{ _('Language') }}">
+        {% for code, label in SUPPORTED_LANGUAGES.items() %}
+        <a href="{{ url_for('i18n.set_language', lang_code=code, next=request.full_path) }}"
+           class="lang-switch-option {% if get_locale() == code %}lang-switch-active{% endif %}">
+            {{ label }}
+        </a>
+        {% endfor %}
+    </div>
+
+    <div class="login-box">
+
+        <h1>
+            CyberSec
+        </h1>
+
+
+        <p class="subtitle">
+
+            {{ _("Security Monitoring & Assessment System") }}
+
+        </p>
+
+
+        <h2>
+            {{ _("Sign In") }}
+        </h2>
+
+
+        {% if error %}
+
+        <div class="login-error">
+
+            {{ error }}
+
+        </div>
+
+        {% endif %}
+
+
+        <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+
+            <label for="username">
+
+                {{ _("Username") }}
+
+            </label>
+
+
+            <input
+                id="username"
+                type="text"
+                name="username"
+                placeholder="{{ _('Username') }}"
+                autocomplete="username"
+                dir="ltr"
+                required
+            >
+
+
+            <label
+                for="password"
+                class="password-label">
+
+                {{ _("Password") }}
+
+            </label>
+
+
+            <input
+                id="password"
+                type="password"
+                name="password"
+                placeholder="{{ _('Password') }}"
+                autocomplete="current-password"
+                dir="ltr"
+                required
+            >
+
+
+            <button type="submit">
+
+                {{ _("Sign In") }}
+
+            </button>
+
+        </form>
+
+
+        <p class="login-note">
+
+            {{ _("Authorized users only") }}
+
+        </p>
+
+
+        <p class="login-note">
+
+            {{ _("Multiple failed login attempts may temporarily lock the account.") }}
+
+        </p>
+
+    </div>
+
+</div>
+
+
+</body>
+
+</html>

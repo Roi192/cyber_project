@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Network Scanner{% endblock %}
+
+{% block content %}
+
+    <h1>Network Scanner</h1>
+
+    <p class="subtitle">
+        Authorized Host Security Assessment
+    </p>
+
+
+    <div class="panel">
+
+        <h2>Target Host</h2>
+
+
+        <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+
+            <label for="ip">
+                IP Address
+            </label>
+
+            <input
+                id="ip"
+                type="text"
+                name="ip"
+                placeholder="Example: 127.0.0.1"
+                required
+            >
+
+            <button type="submit">
+                Scan Host
+            </button>
+
+        </form>
+
+
+        {% if result %}
+
+            {% if result.error %}
+
+                <div class="scan-result">
+
+                    <h3>Scan Error</h3>
+
+                    <p>
+                        {{ result.error }}
+                    </p>
+
+                </div>
+
+            {% else %}
+
+                <div class="scan-result">
+
+                    <h3>Security Score</h3>
+
+                    <p class="score">
+                        {{ result.security_score }}/100
+                    </p>
+
+                </div>
+
+
+                <div class="scan-result">
+
+                    <h3>Port Scan Results</h3>
+
+                    <p>
+                        Target:
+                        <strong>{{ result.ip }}</strong>
+                    </p>
+
+
+                    <table>
+
+                        <tr>
+                            <th>Port</th>
+                            <th>Service</th>
+                            <th>Status</th>
+                        </tr>
+
+
+                        {% for item in result.ports %}
+
+                        <tr>
+
+                            <td>
+                                {{ item.port }}
+                            </td>
+
+                            <td>
+                                {{ item.service }}
+                            </td>
+
+                            <td>
+
+                                {% if item.status == "OPEN" %}
+
+                                <span class="status-open">
+                                    OPEN
+                                </span>
+
+                                {% else %}
+
+                                <span class="status-closed">
+                                    CLOSED
+                                </span>
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </table>
+
+                </div>
+
+
+                <div class="scan-result">
+
+                    <h3>Security Findings</h3>
+
+
+                    {% if result.findings %}
+
+                        {% for finding in result.findings %}
+
+                        <div class="finding">
+
+                            <h4>
+                                {{ finding.title }}
+                            </h4>
+
+                            <p>
+
+                                Severity:
+
+                                <span class="severity-{{ finding.severity|lower }}">
+
+                                    {{ finding.severity }}
+
+                                </span>
+
+                            </p>
+
+                            <p>
+                                Port:
+                                {{ finding.port }}
+                            </p>
+
+                            <p>
+                                {{ finding.description }}
+                            </p>
+
+                        </div>
+
+                        {% endfor %}
+
+
+                    {% else %}
+
+                    <p>
+                        No security findings detected.
+                    </p>
+
+                    {% endif %}
+
+                </div>
+
+            {% endif %}
+
+        {% endif %}
+
+    </div>
+
+{% endblock %}

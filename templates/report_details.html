@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+
+{% block title %}Report{% endblock %}
+
+{% block content %}
+
+    <div class="report-header">
+
+        <div>
+
+            <h1>
+                Security Assessment Report
+            </h1>
+
+            <p class="subtitle">
+                Report #{{ scan.id }}
+            </p>
+
+        </div>
+
+
+        <a
+            class="download-button"
+            href="/report/{{ scan.id }}/pdf">
+
+            Download PDF Report
+
+        </a>
+
+    </div>
+
+
+    <div class="panel">
+
+        <h2>
+            Assessment Information
+        </h2>
+
+
+        <p>
+
+            <strong>Target IP:</strong>
+
+            {{ scan.target_ip }}
+
+        </p>
+
+
+        <p>
+
+            <strong>Scan Date:</strong>
+
+            {{ scan.scan_time }}
+
+        </p>
+
+
+        <p>
+
+            <strong>Performed By:</strong>
+
+            {% if scan.username %}
+
+                {{ scan.username }}
+
+            {% else %}
+
+                Unknown
+
+            {% endif %}
+
+        </p>
+
+
+        <p>
+
+            <strong>Security Score:</strong>
+
+            {{ scan.security_score }}/100
+
+        </p>
+
+    </div>
+
+
+    <div class="cards">
+
+
+        <div class="card">
+
+            <h3>High</h3>
+
+            <p class="number">
+
+                {{ high_count }}
+
+            </p>
+
+        </div>
+
+
+        <div class="card">
+
+            <h3>Medium</h3>
+
+            <p class="number">
+
+                {{ medium_count }}
+
+            </p>
+
+        </div>
+
+
+        <div class="card">
+
+            <h3>Low</h3>
+
+            <p class="number">
+
+                {{ low_count }}
+
+            </p>
+
+        </div>
+
+
+        <div class="card">
+
+            <h3>Info</h3>
+
+            <p class="number">
+
+                {{ info_count }}
+
+            </p>
+
+        </div>
+
+
+    </div>
+
+
+    <div class="panel">
+
+        <h2>
+            Open Ports
+        </h2>
+
+
+        {% if open_ports %}
+
+
+        <table>
+
+            <tr>
+
+                <th>Port</th>
+
+                <th>Service</th>
+
+                <th>Status</th>
+
+            </tr>
+
+
+            {% for item in open_ports %}
+
+
+            <tr>
+
+                <td>
+
+                    {{ item.port }}
+
+                </td>
+
+
+                <td>
+
+                    {{ item.service }}
+
+                </td>
+
+
+                <td>
+
+                    <span class="status-open">
+
+                        OPEN
+
+                    </span>
+
+                </td>
+
+            </tr>
+
+
+            {% endfor %}
+
+
+        </table>
+
+
+        {% else %}
+
+
+        <p>
+
+            No open ports were detected.
+
+        </p>
+
+
+        {% endif %}
+
+
+    </div>
+
+
+    <div class="panel">
+
+        <h2>
+            Security Findings
+        </h2>
+
+
+        {% if findings %}
+
+
+            {% for finding in findings %}
+
+
+            <div class="finding">
+
+
+                <h3>
+
+                    {{ finding.title }}
+
+                </h3>
+
+
+                <p>
+
+                    <strong>
+                        Severity:
+                    </strong>
+
+
+                    <span class="severity-{{ finding.severity|lower }}">
+
+                        {{ finding.severity }}
+
+                    </span>
+
+                </p>
+
+
+                <p>
+
+                    <strong>
+                        Port:
+                    </strong>
+
+                    {{ finding.port }}
+
+                </p>
+
+
+                <p>
+
+                    <strong>
+                        Description:
+                    </strong>
+
+                    {{ finding.description }}
+
+                </p>
+
+
+                <p>
+
+                    <strong>
+                        Score Penalty:
+                    </strong>
+
+                    -{{ finding.score_penalty }}
+
+                </p>
+
+
+            </div>
+
+
+            {% endfor %}
+
+
+        {% else %}
+
+
+        <p>
+
+            No security findings detected.
+
+        </p>
+
+
+        {% endif %}
+
+
+    </div>
+
+
+    <div class="panel">
+
+        <h2>
+            Assessment Summary
+        </h2>
+
+
+        {% if scan.security_score >= 90 %}
+
+
+        <p>
+
+            The target currently demonstrates
+            a strong security posture.
+
+            Only limited exposure was detected
+            during this assessment.
+
+        </p>
+
+
+        {% elif scan.security_score >= 70 %}
+
+
+        <p>
+
+            The target demonstrates a moderate
+            security posture.
+
+            Review the identified findings
+            and reduce unnecessary service exposure.
+
+        </p>
+
+
+        {% else %}
+
+
+        <p>
+
+            The target demonstrates an elevated
+            security risk.
+
+            The identified findings should be
+            reviewed and remediated
+            as soon as possible.
+
+        </p>
+
+
+        {% endif %}
+
+
+    </div>
+
+
+    <a
+        class="details-link"
+        href="/reports">
+
+        ← Back to Reports
+
+    </a>
+
+{% endblock %}

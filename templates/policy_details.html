@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Global Block Policy #{{ policy.id }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .incident-summary-badges {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin: 14px 0;
+    }
+    .incident-summary-badges .badge-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .incident-summary-badges .badge-label {
+        font-size: 11px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    /* .help-tip and .alert-meta-line are defined globally in
+       static/style.css. */
+</style>
+{% endblock %}
+
+{% block content %}
+
+<h1>Global Block Policy #{{ policy.id }}</h1>
+
+<p class="subtitle">
+    {{ policy.target_type }} target - fans out BLOCK_DESTINATION/
+    UNBLOCK_DESTINATION commands to managed endpoints via the existing
+    response_commands architecture.
+</p>
+
+{% if error %}
+<div class="login-error">{{ error }}</div>
+{% endif %}
+
+{% if success %}
+<div class="success-message">{{ success }}</div>
+{% endif %}
+
+<div class="panel">
+
+    <h2>Policy Summary</h2>
+
+    <table>
+        <tr><th>Policy ID</th><td>#{{ policy.id }}</td></tr>
+        <tr>
+            <th>Target</th>
+            <td class="wm-ip-cell">
+                <span class="wm-ip-inline">
+                    <span class="wm-ip-mono{% if policy.target_value|length > 15 %} wm-ip-long{% endif %}" title="{{ policy.target_value }}">{{ policy.target_value }}</span>
+                    <button type="button" class="wm-copy-btn" data-ip="{{ policy.target_value }}" onclick="wmCopyIp(this)" title="Copy IP address">Copy</button>
+                </span>
+            </td>
+        </tr>
+        <tr><th>Type</th><td>{{ policy.target_type }}</td></tr>
+        <tr><th>Scope</th><td>{{ policy.scope }}</td></tr>
+        <tr>
+            <th>
+                <span class="help-tip" title="This is only the administrator's requested intent, never proof of real enforcement. Each endpoint's actual mode below comes from that endpoint's own Agent report.">
+                    Requested Mode
+                </span>
+            </th>
+            <td>{{ policy.requested_mode }}</td>
+        </tr>
+        <tr>
+            <th>Status</th>
+            <td>
+                {% if policy.active == 1 %}
+                <span class="status-open">ACTIVE</span>
+                {% else %}
+                <span class="status-closed">DISABLED</span>
+                {% endif %}
+            </td>
+        </tr>
+        <tr><th>Reason</th><td>{{ policy.reason or "-" }}</td></tr>
+        <tr><th>Source</th><td>{{ policy.source_type or "-" }}{% if policy.source_id %} (#{{ policy.source_id }}){% endif %}</td></tr>
+        <tr><th>Requested By</th><td>{{ policy.requested_by }}</td></tr>
+        <tr><th>Created</th><td>{{ policy.created_at }}</td></tr>
+        {% if policy.active == 0 %}
+        <tr><th>Disabled By</th><td>{{ policy.disabled_by or "-" }}</td></tr>
+        <tr><th>Disabled At</th><td>{{ policy.disabled_at or "-" }}</td></tr>
+        {% endif %}
+    </table>
+
+</div>
+
+<div class="panel">
+
+    <h2>Coverage Summary</h2>
+
+    <div class="incident-summary-badges">
+        <div class="badge-item">
+            <span class="badge-label">Total</span>
+            <span>{{ coverage.total }}</span>
+        </div>
+        <div class="badge-item">
+            <span class="badge-label">Success</span>
+            <span class="status-open">{{ coverage.success }}</span>
+        </div>
+        <div class="badge-item">
+            <span class="badge-label">Pending</span>
+            <span class="incident-investigating">{{ coverage.pending }}</span>
+        </div>
+        <div class="badge-item">
+            <span class="badge-label">Failed</span>
+            <span class="status-closed">{{ coverage.failed }}</span>
+        </div>
+    </div>
+
+</div>
+
+<div class="panel">
+
+    <h2>Per-Endpoint Deployment</h2>
+
+    {% if endpoint_rows %}
+    <div style="overflow-x: auto;">
+    <table>
+        <tr>
+            <th>Hostname</th>
+            <th>Endpoint IP</th>
+            <th>Presence</th>
+            <th>Block Command</th>
+            <th>Block Status</th>
+            <th>
+                <span class="help-tip" title="Only ever shown when the Agent actually reported SUCCESS - never inferred or upgraded from the policy's Requested Mode.">
+                    Actual Mode
+                </span>
+            </th>
+            <th>Requested At</th>
+            <th>Completed</th>
+            <th>Result/Error</th>
+            <th>Unblock Command</th>
+            <th>Unblock Status</th>
+            {% if session.get("role") == "admin" and policy.active == 1 %}
+            <th>Actions</th>
+            {% endif %}
+        </tr>
+        {% for row in endpoint_rows %}
+        <tr>
+            <td>{{ row.hostname or "-" }}</td>
+            <td class="wm-ip-cell"><span class="wm-ip-mono">{{ row.endpoint_ip }}</span></td>
+            <td>{{ row.presence }}</td>
+            <td>{% if row.block_command %}#{{ row.block_command.id }}{% else %}-{% endif %}</td>
+            <td>
+                {% if row.block_command %}
+                    {% if row.block_command.status == "SUCCESS" %}
+                    <span class="status-open">SUCCESS</span>
+                    {% elif row.block_command.status == "FAILED" %}
+                    <span class="status-closed">FAILED</span>
+                    {% else %}
+                    <span class="incident-investigating">{{ row.block_command.status }}</span>
+                    {% endif %}
+                {% else %}
+                -
+                {% endif %}
+            </td>
+            <td>
+                {% if row.block_command and row.block_command.status == "SUCCESS" and row.block_command.mode %}
+                    {% if row.block_command.mode == "ENFORCED" %}
+                    <span class="mode-badge mode-badge-enforced">ENFORCED</span>
+                    {% else %}
+                    <span class="mode-badge mode-badge-simulated">SIMULATED</span>
+                    {% endif %}
+                {% else %}
+                -
+                {% endif %}
+            </td>
+            <td>{% if row.block_command %}{{ row.block_command.created_at }}{% else %}-{% endif %}</td>
+            <td>{% if row.block_command %}{{ row.block_command.executed_at or "-" }}{% else %}-{% endif %}</td>
+            <td>{% if row.block_command %}{{ row.block_command.result_message or "-" }}{% else %}-{% endif %}</td>
+            <td>{% if row.unblock_command %}#{{ row.unblock_command.id }}{% else %}-{% endif %}</td>
+            <td>
+                {% if row.unblock_command %}
+                    {% if row.unblock_command.status == "SUCCESS" %}
+                    <span class="status-open">SUCCESS</span>
+                    {% elif row.unblock_command.status == "FAILED" %}
+                    <span class="status-closed">FAILED</span>
+                    {% else %}
+                    <span class="incident-investigating">{{ row.unblock_command.status }}</span>
+                    {% endif %}
+                {% else %}
+                -
+                {% endif %}
+            </td>
+            {% if session.get("role") == "admin" and policy.active == 1 %}
+            <td>
+                {% if row.block_command and row.block_command.status == "FAILED" %}
+                <form method="POST" action="{{ url_for('organization_blocklist_retry', policy_id=policy.id) }}" style="display: inline;"
+                      onsubmit="return confirm('Retry this endpoint? This creates a new BLOCK command; the failed one is kept as history.');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="endpoint_ip" value="{{ row.endpoint_ip }}">
+                    <button type="submit">Retry</button>
+                </form>
+                {% endif %}
+            </td>
+            {% endif %}
+        </tr>
+        {% endfor %}
+    </table>
+    </div>
+    {% else %}
+    <p>No endpoints are members of this policy yet.</p>
+    {% endif %}
+
+</div>
+
+{% if session.get("role") == "admin" %}
+<div class="panel">
+
+    <h2>Policy Actions</h2>
+
+    {% if policy.active == 1 %}
+
+    <form method="POST" action="{{ url_for('organization_blocklist_sync', policy_id=policy.id) }}" style="display: inline;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit">Sync to Newly-Eligible Endpoints</button>
+    </form>
+
+    <form method="POST" action="{{ url_for('organization_blocklist_disable', policy_id=policy.id) }}" style="display: inline;"
+          onsubmit="return confirm('Disable this Global Block Policy? This will request UNBLOCK on every endpoint currently covered by this policy\'s own BLOCK commands only.');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="delete-button">Disable / Global Unblock</button>
+    </form>
+
+    {% else %}
+
+    <p>This policy is disabled. Historical evidence remains visible above.</p>
+
+    {% endif %}
+
+</div>
+{% endif %}
+
+<div class="panel">
+    <a href="{{ url_for('organization_blocklist') }}" class="details-link">&larr; Back to Organization Blocklist</a>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function wmCopyIp(button) {
+    var ip = button.getAttribute("data-ip");
+    if (!ip || !navigator.clipboard || !navigator.clipboard.writeText) {
+        return;
+    }
+    navigator.clipboard.writeText(ip).then(function () {
+        var original = button.innerHTML;
+        button.innerHTML = "&#10003;";
+        setTimeout(function () {
+            button.innerHTML = original;
+        }, 1200);
+    });
+}
+</script>
+{% endblock %}

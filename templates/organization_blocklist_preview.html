@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Preview Global Block{% endblock %}
+
+{% block content %}
+
+<h1>Preview Global Block</h1>
+
+<p class="subtitle">
+    Step 2 of 2. This is a read-only preview - nothing has been created yet.
+    No policy, response command, or firewall action exists as a result of
+    this page.
+</p>
+
+{% if preview.existing_policy %}
+<div class="login-error" style="background: #1e3a5f; color: #93c5fd;">
+    An active Global Block Policy (#{{ preview.existing_policy.id }}) already
+    exists for this exact target. Submitting below will deploy/sync it to
+    any eligible endpoints not already covered - it will NOT create a second
+    parallel policy.
+</div>
+{% endif %}
+
+<div class="panel">
+
+    <h2>Summary</h2>
+
+    <table>
+        <tr><th>Target</th><td class="wm-ip-cell"><span class="wm-ip-mono">{{ parsed.target_value }}</span></td></tr>
+        <tr><th>Type</th><td>{{ parsed.target_type }}</td></tr>
+        <tr><th>Scope</th><td>{{ parsed.scope }}</td></tr>
+        <tr><th>Requested Mode</th><td>{{ parsed.requested_mode }}</td></tr>
+        <tr><th>Reason</th><td>{{ parsed.reason or "-" }}</td></tr>
+        <tr><th>Eligible Endpoints</th><td>{{ preview.eligible_count }}</td></tr>
+        <tr>
+            <th>Presence Breakdown</th>
+            <td>
+                Online: {{ preview.presence_counts.ONLINE }}
+                &middot; Stale: {{ preview.presence_counts.STALE }}
+                &middot; Offline: {{ preview.presence_counts.OFFLINE }}
+                &middot; Unknown: {{ preview.presence_counts.UNKNOWN }}
+            </td>
+        </tr>
+        <tr>
+            <th>
+                <span class="help-tip" title="Endpoints that are already members of THIS Global Policy with a SUCCESS/PENDING/ACKNOWLEDGED/EXECUTING command it owns - not endpoints that merely happen to be blocked for some other, unrelated reason.">
+                    Already Covered By This Policy
+                </span>
+            </th>
+            <td>{{ preview.already_covered }}</td>
+        </tr>
+        <tr>
+            <th>New Policy-Owned Commands</th>
+            <td>{{ preview.new_commands }}</td>
+        </tr>
+    </table>
+
+    <p class="alert-meta-line">
+        An endpoint may already have an unrelated active block from an Alert,
+        Incident, or manual action for this same destination - see the "Other
+        Active Block (Unrelated)" column below. This Global Policy always
+        creates and owns its own separate command/rule; it never reuses or
+        takes ownership of another source's command.
+    </p>
+
+</div>
+
+<div class="panel">
+
+    <h2>Per-Endpoint Preview</h2>
+
+    {% if preview.endpoints %}
+    <div style="overflow-x: auto;">
+    <table>
+        <tr>
+            <th>Hostname</th>
+            <th>IP</th>
+            <th>Presence</th>
+            <th>
+                <span class="help-tip" title="Whether THIS Global Policy already has its own membership/command for this endpoint - not whether the destination happens to be blocked for some other, unrelated reason.">
+                    This Policy's Coverage
+                </span>
+            </th>
+            <th>Command That Would Be Created</th>
+            <th>
+                <span class="help-tip" title="An unrelated Alert/Incident/manual command may already be blocking this same destination on this endpoint. This Global Policy will still create and own its own separate command/rule - it never reuses another source's command.">
+                    Other Active Block (Unrelated)
+                </span>
+            </th>
+        </tr>
+        {% for endpoint in preview.endpoints %}
+        <tr>
+            <td>{{ endpoint.hostname or "-" }}</td>
+            <td class="wm-ip-cell"><span class="wm-ip-mono">{{ endpoint.ip_address }}</span></td>
+            <td>{{ endpoint.presence }}</td>
+            <td>
+                {% if endpoint.coverage == "NEW" %}
+                None
+                {% elif endpoint.coverage == "ALREADY_COVERED_SUCCESS" %}
+                <span class="status-open">SUCCESS</span>
+                {% elif endpoint.coverage == "ALREADY_COVERED_PENDING" %}
+                <span class="incident-investigating">{{ endpoint.existing_command.status }}</span>
+                {% elif endpoint.coverage == "FAILED_NEEDS_RETRY" %}
+                <span class="status-closed">FAILED</span>
+                {% endif %}
+            </td>
+            <td>{{ endpoint.action_label }}</td>
+            <td>
+                {% if endpoint.unrelated_existing_command %}
+                <span class="alert-meta-line">
+                    {{ endpoint.unrelated_existing_command.status }}
+                    (command #{{ endpoint.unrelated_existing_command.id }}{% if endpoint.unrelated_existing_command.alert_id %}, Alert #{{ endpoint.unrelated_existing_command.alert_id }}{% endif %}{% if endpoint.unrelated_existing_command.incident_id %}, Incident #{{ endpoint.unrelated_existing_command.incident_id }}{% endif %}) -
+                    this policy will still create its own independent command.
+                </span>
+                {% else %}
+                -
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    </div>
+    {% else %}
+    <p>No eligible endpoints match this scope.</p>
+    {% endif %}
+
+</div>
+
+<div class="panel">
+
+    <form method="POST" action="{{ url_for('organization_blocklist_create') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="target" value="{{ parsed.target_value }}">
+        <input type="hidden" name="scope" value="{{ parsed.scope }}">
+        <input type="hidden" name="requested_mode" value="{{ parsed.requested_mode }}">
+        <input type="hidden" name="reason" value="{{ parsed.reason or '' }}">
+        <input type="hidden" name="source_type" value="{{ parsed.source_type }}">
+        <input type="hidden" name="source_id" value="{{ parsed.source_id or '' }}">
+        {% if parsed.selected_ips %}
+        {% for ip in parsed.selected_ips %}
+        <input type="hidden" name="selected_endpoints" value="{{ ip }}">
+        {% endfor %}
+        {% endif %}
+
+        <p class="alert-meta-line">
+            Submitting will re-validate everything on the server again before
+            creating or syncing anything.
+        </p>
+
+        <button type="submit">
+            {% if preview.existing_policy %}Deploy / Sync Existing Policy{% else %}Create Global Block Policy{% endif %}
+        </button>
+        <a href="{{ url_for('organization_blocklist_new') }}" class="details-link">&larr; Back and edit</a>
+
+    </form>
+
+</div>
+
+{% endblock %}

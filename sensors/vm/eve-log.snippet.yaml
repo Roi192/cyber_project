@@ -1,0 +1,39 @@
+# Reference eve-log output for the SOC adapter (Suricata 8.0.x) - MINIMISED for privacy. NOT applied automatically:
+# a sensor operator applies it by hand (backup first, `suricata -T` before any reload; see docs/SURICATA_SENSOR_HARDENING.md).
+#
+# Principles
+#  * Log ONLY what the adapter consumes: alert, dns (responses), tls, flow, stats. Unlisted types (quic, http, files,
+#    anomaly, dhcp, ...) are simply not written - this does not change detection, only the raw file's content.
+#  * NO payload, NO packet bytes, NO HTTP bodies, NO certificates/chains, NO TLS interception.
+#  * community-id is NOT touched here. The adapter preserves `community_id` only when Suricata provides it and never computes it.
+#  * filemode 640 + a dedicated read group (root:soc-eve) instead of world-readable.
+#  * Field names below were checked against the Suricata docs: tls custom fields include sni, version, subject, issuer,
+#    fingerprint, ja3, ja4, client_alpns, server_alpns (all fields the adapter uses); `certificate`/`chain` are deliberately absent.
+#
+# HOME_NET (elsewhere in suricata.yaml) is a per-deployment value, e.g. HOME_NET: "[192.0.2.0/24]"  (documentation prefix; use your own networks).
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: eve.json
+      filemode: 640
+      types:
+        - alert:
+            payload: no
+            payload-printable: no
+            packet: no
+            http-body: no
+            http-body-printable: no
+            tagged-packets: no
+            metadata: yes
+        - dns:
+            version: 3
+            requests: no
+            responses: yes
+        - tls:
+            custom: [sni, version, subject, issuer, fingerprint, ja3, ja4, client_alpns, server_alpns]
+        - flow
+        - stats:
+            totals: yes
+            threads: no
+# IDS only: af-packet with no copy-mode (never ips), no NFQ, no inline.
+# NOTE: `dns requests: no` is valid only while the adapter runs WITHOUT --include-dns-requests / SURICATA_INCLUDE_DNS_REQUESTS.

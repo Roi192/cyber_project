@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _("Executive Summary") }}{% endblock %}
+
+{% block extra_head %}
+<script src="{{ url_for('static', filename='vendor/chart.min.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+
+<h1>{{ _("Executive Security Summary") }}</h1>
+<p class="subtitle">
+    {{ _("A plain-language overview of your organization's security status.") }}
+    {{ _("For full technical details, see the") }}
+    <a href="{{ url_for('dashboard') }}" class="details-link">{{ _("technical Dashboard") }}</a>.
+</p>
+
+<div class="exec-period-tabs">
+    <a href="{{ url_for('executive_dashboard.executive_summary', period='today') }}"
+       class="{% if period == 'today' %}exec-period-active{% endif %}">{{ _("Today") }}</a>
+    <a href="{{ url_for('executive_dashboard.executive_summary', period='week') }}"
+       class="{% if period == 'week' %}exec-period-active{% endif %}">{{ _("This week") }}</a>
+    <a href="{{ url_for('executive_dashboard.executive_summary', period='month') }}"
+       class="{% if period == 'month' %}exec-period-active{% endif %}">{{ _("This month") }}</a>
+</div>
+
+{% if organization_status == 'urgent_security_event' %}
+<div class="exec-status-banner exec-status-urgent">
+    <div class="exec-status-icon">&#9888;&#65039;</div>
+    <div class="exec-status-text">
+        <h2>{{ _("Urgent security event") }}</h2>
+        <p>{{ _("Something serious needs your attention right now. See the recommended actions below.") }}</p>
+    </div>
+</div>
+{% elif organization_status == 'needs_review' %}
+<div class="exec-status-banner exec-status-needs_review">
+    <div class="exec-status-icon">&#128269;</div>
+    <div class="exec-status-text">
+        <h2>{{ _("Review needed") }}</h2>
+        <p>{{ _("Some lower-priority items were found and should be reviewed when convenient.") }}</p>
+    </div>
+</div>
+{% elif organization_status == 'no_monitoring_coverage' %}
+<div class="exec-status-banner exec-status-no_monitoring_coverage">
+    <div class="exec-status-icon">&#10067;</div>
+    <div class="exec-status-text">
+        <h2>{{ _("No computers are currently registered for monitoring") }}</h2>
+        <p>{{ _("No data is available yet, so no statement can be made about your security status.") }}</p>
+    </div>
+</div>
+{% else %}
+<div class="exec-status-banner exec-status-no_active_threats">
+    <div class="exec-status-icon">&#9989;</div>
+    <div class="exec-status-text">
+        <h2>{{ _("No active threats detected") }}</h2>
+        <p>{{ _("No open security issues were found among the computers currently being monitored.") }}</p>
+    </div>
+</div>
+{% endif %}
+
+{% if partial_coverage %}
+<div class="exec-coverage-badge">
+    &#128246;
+    {{ _("Monitoring coverage is partial") }} &mdash;
+    {{ _("%(not_reporting)s of %(total)s registered computers are not currently reporting in.", not_reporting=non_reporting_count, total=monitored_total) }}
+</div>
+{% endif %}
+
+
+<div class="panel">
+    <h2>{{ _("At a glance") }}</h2>
+    <div class="exec-card-row">
+        <div class="exec-mini-card">
+            <div class="exec-mini-number">{{ monitored_total }}</div>
+            <div class="exec-mini-label">{{ _("Computers registered for monitoring") }}</div>
+        </div>
+        <div class="exec-mini-card">
+            <div class="exec-mini-number">{{ presence_counts.ONLINE }}</div>
+            <div class="exec-mini-label">{{ _("Reporting in right now") }}</div>
+        </div>
+        <div class="exec-mini-card">
+            <div class="exec-mini-number">{{ non_reporting_count }}</div>
+            <div class="exec-mini-label">{{ _("Not currently reporting in") }}</div>
+        </div>
+        <div class="exec-mini-card">
+            <div class="exec-mini-number">{{ total_open_alerts }}</div>
+            <div class="exec-mini-label">{{ _("Open security issues") }}</div>
+        </div>
+        <div class="exec-mini-card">
+            <div class="exec-mini-number">{{ open_incident_count }}</div>
+            <div class="exec-mini-label">{{ _("Open investigations") }}</div>
+        </div>
+        <div class="exec-mini-card">
+            <div class="exec-mini-number">{{ new_in_period }}</div>
+            <div class="exec-mini-label">
+                {% if period == 'today' %}{{ _("New issues – today") }}
+                {% elif period == 'week' %}{{ _("New issues – this week") }}
+                {% else %}{{ _("New issues – this month") }}{% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="panel">
+    <h2>{{ _("Open issues by priority") }}</h2>
+    <p class="subtitle">{{ _("Counts only – see Recommended Actions below for what to do about them.") }}</p>
+    <div class="exec-card-row">
+        <div class="exec-mini-card">
+            <div class="exec-mini-number severity-critical" style="font-size:28px; padding:0; background:none;">{{ open_by_severity.CRITICAL }}</div>
+            <div class="exec-mini-label">{{ severity_label("CRITICAL") }}</div>
+        </div>
+        <div class="exec-mini-card">
+            <div class="exec-mini-number severity-high">{{ open_by_severity.HIGH }}</div>
+            <div class="exec-mini-label">{{ _("High priority") }}</div>
+        </div>
+        <div class="exec-mini-card">
+            <div class="exec-mini-number severity-medium">{{ open_by_severity.MEDIUM }}</div>
+            <div class="exec-mini-label">{{ _("Medium priority") }}</div>
+        </div>
+        <div class="exec-mini-card">
+            <div class="exec-mini-number severity-low">{{ open_by_severity.LOW }}</div>
+            <div class="exec-mini-label">{{ _("Low priority") }}</div>
+        </div>
+    </div>
+</div>
+
+
+<div class="panel">
+    <h2>{{ _("Recommended actions") }}</h2>
+    {% if recommended_actions %}
+        {% for action in recommended_actions %}
+        <div class="exec-action-item">
+            <span class="severity-{{ action.severity|lower }}">{{ severity_label(action.severity) }}</span>
+            &mdash; {{ action.explanation.what_happened }}
+            <div class="exec-action-meta">
+                {{ action.explanation.subject_label }} {{ (action.explanation.subject_value or _("Not available"))|ltr }}
+                &middot; {{ action.explanation.status_label }}
+            </div>
+            <div class="exec-action-meta" style="margin-top:6px;">
+                <strong>{{ _("Possible business impact:") }}</strong> {{ action.explanation.business_meaning }}
+            </div>
+            <div class="exec-action-meta" style="margin-top:6px;">
+                <strong>{{ _("Recommended action:") }}</strong>
+                {{ action.explanation.recommended_action[0] }}
+                {% if action.explanation.recommended_action|length > 1 %}
+                {{ _("(and %(n)s more step(s) - see technical details)", n=action.explanation.recommended_action|length - 1) }}
+                {% endif %}
+            </div>
+            <div class="exec-action-meta" style="margin-top:6px;">
+                <a href="/alert/{{ action.id }}" class="details-link">{{ _("View technical details →") }}</a>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+    <p class="exec-empty-state">{{ _("No actions are recommended right now.") }}</p>
+    {% endif %}
+</div>
+
+
+<div class="panel">
+    <h2>{{ _("Computers needing inspection") }}</h2>
+    {% if computers_needing_inspection %}
+    <div style="overflow-x: auto;">
+    <table>
+        <tr><th>{{ _("Computer") }}</th><th>{{ _("Address") }}</th></tr>
+        {% for comp in computers_needing_inspection %}
+        <tr>
+            <td>{{ comp.hostname or _("Unknown") }}</td>
+            <td>{{ comp.endpoint_ip|ltr }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    </div>
+    {% if computers_needing_inspection_truncated %}
+    <p class="subtitle">{{ _("Showing the first %(n)s. See the technical Dashboard for the full list.", n=computers_needing_inspection|length) }}</p>
+    {% endif %}
+    {% else %}
+    <p class="exec-empty-state">{{ _("No computers currently need inspection.") }}</p>
+    {% endif %}
+</div>
+
+
+{% if non_reporting_endpoints %}
+<div class="panel">
+    <h2>{{ _("Computers not currently reporting in") }}</h2>
+    <p class="subtitle">
+        {{ _("A computer appears here if it hasn't checked in recently. This can mean it is turned off, disconnected from the network, or that monitoring software needs attention.") }}
+    </p>
+    <div style="overflow-x: auto;">
+    <table>
+        <tr><th>{{ _("Computer") }}</th><th>{{ _("Address") }}</th><th>{{ _("Last seen") }}</th></tr>
+        {% for ep in non_reporting_endpoints %}
+        <tr>
+            <td>{{ ep.hostname or _("Unknown") }}</td>
+            <td>{{ ep.ip_address|ltr }}</td>
+            <td>{{ (ep.last_seen or _("Never"))|ltr }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    </div>
+    {% if non_reporting_truncated %}
+    <p class="subtitle">{{ _("Showing the first %(shown)s of %(total)s.", shown=non_reporting_endpoints|length, total=non_reporting_count) }}</p>
+    {% endif %}
+</div>
+{% endif %}
+
+
+<div class="panel">
+    <h2>{{ _("Trend – last 14 days") }}</h2>
+    <canvas id="execTrendChart" height="90"></canvas>
+</div>
+
+
+<div class="panel">
+    <h2>{{ _("Period summary") }}</h2>
+    <div class="exec-card-row">
+        <div class="exec-mini-card">
+            <div class="exec-mini-number">{{ alerts_this_week }}</div>
+            <div class="exec-mini-label">{{ _("Security issues – last 7 days") }}</div>
+        </div>
+        <div class="exec-mini-card">
+            <div class="exec-mini-number">{{ alerts_this_month }}</div>
+            <div class="exec-mini-label">{{ _("Security issues – last 30 days") }}</div>
+        </div>
+        <div class="exec-mini-card">
+            <div class="exec-mini-number">{{ incidents_this_week }}</div>
+            <div class="exec-mini-label">{{ _("Investigations – last 7 days") }}</div>
+        </div>
+        <div class="exec-mini-card">
+            <div class="exec-mini-number">{{ incidents_this_month }}</div>
+            <div class="exec-mini-label">{{ _("Investigations – last 30 days") }}</div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+
+// Oct 2026 Step 22/23: all labels/values below are plain numbers and
+// locale-neutral MM-DD date strings computed server-side in
+// executive_dashboard.py - no user-facing text is authored in this
+// script, so translation never needs to touch it.
+const execTrendLabels = {{ trend_labels | tojson }};
+const execTrendValues = {{ trend_values | tojson }};
+
+new Chart(document.getElementById("execTrendChart"), {
+    type: "bar",
+    data: {
+        labels: execTrendLabels,
+        datasets: [{
+            data: execTrendValues,
+            backgroundColor: "#2563eb"
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { beginAtZero: true, ticks: { color: "#cbd5e1", precision: 0 }, grid: { color: "#334155" } },
+            x: { ticks: { color: "#cbd5e1" }, grid: { display: false } }
+        }
+    }
+});
+
+</script>
+{% endblock %}

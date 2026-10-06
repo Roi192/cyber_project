@@ -1,0 +1,666 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _("Incident #%(id)s", id=event.id) }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .incident-summary-badges {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin: 14px 0;
+    }
+    .incident-summary-badges .badge-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .incident-summary-badges .badge-label {
+        font-size: 11px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    .context-box {
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 10px;
+        padding: 16px;
+        margin-top: 12px;
+    }
+    .context-box table {
+        margin-top: 0;
+    }
+    /* .help-tip and .alert-meta-line are now defined globally in
+       static/style.css (reused by Alert Details and Organization
+       Blocklist too). */
+    .alert-card {
+        background: #111827;
+        border: 1px solid #334155;
+        border-radius: 10px;
+        padding: 14px 18px;
+    }
+    .response-action-cards {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+    .response-action-cards .action-card {
+        flex: 1 1 280px;
+    }
+    .action-card-isolate button,
+    .action-card-isolate .delete-button {
+        margin-top: 15px;
+    }
+    .workflow-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+    <h1>
+        {{ _("Incident #%(id)s", id=event.id) }}
+    </h1>
+
+    <p class="subtitle">
+        {{ type_label }}
+        <span style="color: #64748b; font-size: 12px;">({{ event.event_type }})</span>
+    </p>
+
+
+    {% if error %}
+    <div class="login-error">
+        {{ error }}
+    </div>
+    {% endif %}
+
+    {% if success %}
+    <div class="success-message">
+        {{ success }}
+    </div>
+    {% endif %}
+
+
+    <!-- STEP 23.1: PLAIN-LANGUAGE SUMMARY (presentation only - the technical
+         panels below show the full, unmodified original record) -->
+    <div class="plain-explain-box">
+        <h3>{{ _("Plain-Language Summary") }}</h3>
+        <div class="plain-explain-row">
+            <span class="plain-explain-label">{{ _("What happened") }}</span>
+            {{ plain_explanation.what_happened }}
+        </div>
+        <div class="plain-explain-row">
+            <span class="plain-explain-label">{{ plain_explanation.subject_label }}</span>
+            {{ (plain_explanation.subject_value or _("Not available"))|ltr }}
+        </div>
+        <div class="plain-explain-row">
+            <span class="plain-explain-label">{{ _("Possible business impact") }}</span>
+            {{ plain_explanation.business_meaning }}
+        </div>
+        <div class="plain-explain-row">
+            <span class="plain-explain-label">{{ _("Recommended action") }}</span>
+            {{ plain_explanation.recommended_action[0] }}
+            {% if plain_explanation.recommended_action|length > 1 %}
+            {{ _("(and %(n)s more step(s) below)", n=plain_explanation.recommended_action|length - 1) }}
+            {% endif %}
+        </div>
+        <div class="plain-explain-row">
+            <span class="plain-explain-label">{{ _("Current state") }}</span>
+            {{ plain_explanation.status_label }}
+        </div>
+        {% if not plain_explanation.is_known_type %}
+        <div class="plain-explain-row" style="color:#94a3b8; font-size:12px;">
+            {{ _("This event type was not recognized by the plain-language summary - the explanation above is generic. See the technical sections below for the full details.") }}
+        </div>
+        {% endif %}
+    </div>
+
+
+    <!-- 1. INCIDENT SUMMARY -->
+    <div class="panel">
+
+        <h2>{{ event.title }}</h2>
+
+        <div class="incident-summary-badges">
+
+            <div class="badge-item">
+                <span class="badge-label">{{ _("Severity") }}</span>
+                <span class="severity-{{ event.severity|lower }}">{{ severity_label(event.severity) }}</span>
+            </div>
+
+            <div class="badge-item">
+                <span class="badge-label">{{ _("Status") }}</span>
+                <span>
+                    {% if event.status == "OPEN" %}
+                    <span class="incident-open">{{ _("OPEN") }}</span>
+                    {% elif event.status == "INVESTIGATING" %}
+                    <span class="incident-investigating">{{ _("INVESTIGATING") }}</span>
+                    {% else %}
+                    <span class="incident-resolved">{{ _("RESOLVED") }}</span>
+                    {% endif %}
+                </span>
+            </div>
+
+        </div>
+
+        <p class="alert-meta-line">
+            {{ _("Detected") }} {{ event.event_time|ltr }}
+            &middot; {{ _("Last Updated") }}
+            {% if event.updated_at %}
+                {% if event.updated_by %}
+                {{ _("%(when)s by %(who)s", when=event.updated_at, who=event.updated_by) }}
+                {% else %}
+                {{ event.updated_at|ltr }}
+                {% endif %}
+            {% else %}
+                -
+            {% endif %}
+        </p>
+
+    </div>
+
+
+    <!-- 2. INCIDENT CONTEXT / ORIGIN -->
+    <div class="panel">
+
+        <h2>{{ _("Incident Context / Origin") }}</h2>
+
+        <div class="context-box">
+
+            {% if event.event_type == "BRUTE_FORCE_DETECTED" %}
+
+            <table>
+                <tr>
+                    <th>{{ _("Affected Account") }}</th>
+                    <td>{{ event.username or "-" }}</td>
+                </tr>
+                <tr>
+                    <th>{{ _("Detection Context") }}</th>
+                    <td>{{ _("Authentication / SOC Login Security") }}</td>
+                </tr>
+                <tr>
+                    <th>
+                        <span class="help-tip" title="{{ _('The source IP of the failed login attempts was not captured by the incident model at the time this incident was created.') }}">
+                            {{ _("Source IP") }}
+                        </span>
+                    </th>
+                    <td>{{ _("Not recorded") }}</td>
+                </tr>
+            </table>
+
+            {% elif suspicious_destination %}
+
+            <table>
+                <tr>
+                    <th>{{ _("Suspicious IP") }}</th>
+                    <td class="wm-ip-cell">
+                        <span class="wm-ip-inline">
+                            <span class="wm-ip-mono{% if suspicious_destination|length > 15 %} wm-ip-long{% endif %}" title="{{ suspicious_destination }}" dir="ltr">{{ suspicious_destination }}</span>
+                            <button type="button" class="wm-copy-btn" data-ip="{{ suspicious_destination }}" onclick="wmCopyIp(this)" title="{{ _('Copy IP address') }}">{{ _("Copy") }}</button>
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <th>{{ _("Analysis Performed By") }}</th>
+                    <td>{{ event.username or "-" }}</td>
+                </tr>
+                <tr>
+                    <th>{{ _("Origin") }}</th>
+                    <td>{{ _("Manual IP Reputation Analysis") }}</td>
+                </tr>
+            </table>
+
+            {% elif affected_managed_endpoint %}
+
+            <table>
+                <tr>
+                    <th>{{ _("Managed Endpoint") }}</th>
+                    <td class="wm-ip-cell">
+                        {{ (affected_managed_endpoint.hostname or "-")|ltr }}
+                        <br>
+                        <span class="wm-ip-inline">
+                            <span class="wm-ip-mono{% if event.target_ip|length > 15 %} wm-ip-long{% endif %}" title="{{ event.target_ip }}" dir="ltr">{{ event.target_ip }}</span>
+                            <button type="button" class="wm-copy-btn" data-ip="{{ event.target_ip }}" onclick="wmCopyIp(this)" title="{{ _('Copy IP address') }}">{{ _("Copy") }}</button>
+                        </span>
+                    </td>
+                </tr>
+            </table>
+            <p class="alert-meta-line">
+                {{ _("See Related Security Alerts below for destination/evidence context.") }}
+            </p>
+
+            {% elif event.target_ip %}
+
+            <table>
+                <tr>
+                    <th>{{ _("Target IP") }}</th>
+                    <td class="wm-ip-cell">
+                        <span class="wm-ip-inline">
+                            <span class="wm-ip-mono{% if event.target_ip|length > 15 %} wm-ip-long{% endif %}" title="{{ event.target_ip }}" dir="ltr">{{ event.target_ip }}</span>
+                            <button type="button" class="wm-copy-btn" data-ip="{{ event.target_ip }}" onclick="wmCopyIp(this)" title="{{ _('Copy IP address') }}">{{ _("Copy") }}</button>
+                        </span>
+                    </td>
+                </tr>
+            </table>
+            <p class="alert-meta-line">
+                {{ _("This IP is not confirmed as a Managed Endpoint (no matching agent-sourced endpoint record).") }}
+            </p>
+
+            {% else %}
+
+            <p>{{ _("No target IP recorded for this incident.") }}</p>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <!-- 3. DETECTION & EVIDENCE -->
+    <div class="panel">
+
+        <h2>{{ _("Detection & Evidence") }}</h2>
+
+        <p>{{ event.description }}</p>
+
+        {% if related_logs %}
+        <p class="alert-meta-line" style="margin-top: 14px;">{{ _("Exactly-matched audit log entries:") }}</p>
+        <ul>
+            {% for log in related_logs %}
+            <li>{{ log.log_time|ltr }} &middot; {{ log.event_type }} &middot; {{ log.message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+    </div>
+
+
+    <!-- 4. RELATED SECURITY ALERTS -->
+    <div class="panel">
+
+        <h2>{{ _("Related Security Alerts") }}</h2>
+
+        {% if linked_alert %}
+
+        <div class="alert-card">
+            <a href="/alert/{{ linked_alert.id }}" class="details-link">
+                {{ _("Alert #%(id)s", id=linked_alert.id) }} &middot; {{ linked_alert.title }}
+            </a>
+            <table style="margin-top: 10px;">
+                <tr>
+                    <th>{{ _("Severity") }}</th>
+                    <td><span class="severity-{{ linked_alert.severity|lower }}">{{ severity_label(linked_alert.severity) }}</span></td>
+                </tr>
+                <tr>
+                    <th>{{ _("Risk Score") }}</th>
+                    <td>{{ linked_alert.risk_score }} / 100</td>
+                </tr>
+                <tr>
+                    <th>{{ _("Status") }}</th>
+                    <td>{{ linked_alert.status }}</td>
+                </tr>
+                {% if linked_alert.domain or linked_alert.destination_ip %}
+                <tr>
+                    <th>{{ _("Remote Destination") }}</th>
+                    <td class="wm-ip-cell">
+                        {% set alert_has_hostname = linked_alert.domain and linked_alert.domain != linked_alert.destination_ip %}
+                        {% if alert_has_hostname %}
+                            {{ linked_alert.domain|ltr }}
+                            {% if linked_alert.destination_ip %}
+                            <br>
+                            <span class="wm-ip-inline">
+                                <span class="wm-ip-mono{% if linked_alert.destination_ip|length > 15 %} wm-ip-long{% endif %}" title="{{ linked_alert.destination_ip }}" dir="ltr">{{ linked_alert.destination_ip }}</span>
+                                <button type="button" class="wm-copy-btn" data-ip="{{ linked_alert.destination_ip }}" onclick="wmCopyIp(this)" title="{{ _('Copy IP address') }}">{{ _("Copy") }}</button>
+                            </span>
+                            {% endif %}
+                        {% elif linked_alert.destination_ip %}
+                        <span class="wm-ip-inline">
+                            <span class="wm-ip-mono{% if linked_alert.destination_ip|length > 15 %} wm-ip-long{% endif %}" title="{{ linked_alert.destination_ip }}" dir="ltr">{{ linked_alert.destination_ip }}</span>
+                            <button type="button" class="wm-copy-btn" data-ip="{{ linked_alert.destination_ip }}" onclick="wmCopyIp(this)" title="{{ _('Copy IP address') }}">{{ _("Copy") }}</button>
+                        </span>
+                        {% else %}
+                        {{ linked_alert.domain|ltr }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endif %}
+                {% if linked_alert.process_name %}
+                <tr>
+                    <th>{{ _("Process") }}</th>
+                    <td>{{ linked_alert.process_name|ltr }}</td>
+                </tr>
+                {% endif %}
+            </table>
+        </div>
+
+        {% if alert_recommended_response %}
+        <p class="alert-meta-line" style="margin-top: 14px;">{{ _("Guidance inherited from related Security Alert:") }}</p>
+        <ol>
+            {% for step in alert_recommended_response %}
+            <li>{{ step }}</li>
+            {% endfor %}
+        </ol>
+        {% endif %}
+
+        {% else %}
+
+        <p>{{ _("No Security Alert is structurally linked to this Incident.") }}</p>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- 5. THREAT INTELLIGENCE (only when applicable) -->
+    {% if suspicious_destination %}
+    <div class="panel">
+
+        <h2>{{ _("Threat Intelligence") }}</h2>
+
+        {% if threat_reputation_row %}
+
+        <table>
+            <tr>
+                <th>{{ _("Risk Score") }}</th>
+                <td>{{ threat_reputation_row.risk_score }} / 100</td>
+            </tr>
+            <tr>
+                <th>{{ _("VirusTotal Malicious") }}</th>
+                <td>{{ threat_reputation_row.vt_malicious }}</td>
+            </tr>
+            <tr>
+                <th>{{ _("VirusTotal Suspicious") }}</th>
+                <td>{{ threat_reputation_row.vt_suspicious }}</td>
+            </tr>
+            <tr>
+                <th>{{ _("AbuseIPDB Confidence") }}</th>
+                <td>{{ threat_reputation_row.abuse_confidence }}%</td>
+            </tr>
+            <tr>
+                <th>{{ _("Abuse Reports") }}</th>
+                <td>{{ threat_reputation_row.abuse_reports }}</td>
+            </tr>
+            <tr>
+                <th>{{ _("Local IOC") }}</th>
+                <td>
+                    {% if local_ioc_row %}
+                    <span class="severity-{{ local_ioc_row.severity|lower }}">{{ _("Active (%(severity)s)", severity=severity_label(local_ioc_row.severity)) }}</span>
+                    {% else %}
+                    {{ _("No active local IOC match is recorded for this IP.") }}
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <th>{{ _("Checked By") }}</th>
+                <td>{{ threat_reputation_row.checked_by or "-" }}</td>
+            </tr>
+            <tr>
+                <th>{{ _("Checked At") }}</th>
+                <td>{{ threat_reputation_row.checked_at|ltr }}</td>
+            </tr>
+        </table>
+
+        {% if not reputation_confirmed %}
+        <p class="alert-meta-line">
+            {{ _("This is the most recent stored reputation check for this IP; it is current data and is not proven to be the exact result available at the time this Incident was created.") }}
+        </p>
+        {% endif %}
+
+        {% else %}
+
+        <p>{{ _("No stored threat intelligence data is available for this IP.") }}</p>
+
+        {% endif %}
+
+    </div>
+    {% endif %}
+
+
+    <!-- 6. RESPONSE ACTIONS -->
+    {% if session.get("role") == "admin" %}
+    <div class="panel">
+
+        <h2>{{ _("Response Actions") }}</h2>
+
+        <p class="subtitle">
+            {{ _("Admin-only. Creates a command for the Endpoint Agent - nothing is enforced instantly (see Activity & Actions Taken below for the Mode the Agent actually reports).") }}
+        </p>
+
+        <div class="response-action-cards">
+
+            {% if linked_alert and block_target %}
+
+            <div class="action-card finding">
+                <h3>{{ _("Block Destination") }}</h3>
+                <p>{{ _("Request the Endpoint Agent to block communication with this destination on the affected endpoint.") }}</p>
+
+                {% if already_blocked %}
+                <form method="POST" style="display: inline;"
+                      onsubmit="return confirm('{{ _('Request unblocking of this destination on the affected endpoint?') }}');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="unblock_destination">
+                    <button type="submit">{{ _("Unblock Destination") }}</button>
+                </form>
+                {% else %}
+                <form method="POST" style="display: inline;"
+                      onsubmit="return confirm('{{ _('Request blocking of this destination on the affected endpoint?') }}');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="block_destination">
+                    <button type="submit">{{ _("Block Destination") }}</button>
+                </form>
+                {% endif %}
+            </div>
+
+            {% elif suspicious_destination %}
+
+            <div class="action-card finding">
+                <h3>{{ _("Block Suspicious IP") }}</h3>
+                <p>{{ _("Request the Endpoint Agent response system to block communication with this suspicious IP where the existing response architecture supports that target.") }}</p>
+
+                {% if block_execution_endpoint %}
+                <form method="POST" style="display: inline;"
+                      onsubmit="return confirm('{{ _('Request blocking of this suspicious IP?') }}');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="block_destination">
+                    <button type="submit">{{ _("Block Suspicious IP") }}</button>
+                </form>
+                {% else %}
+                <p class="alert-meta-line">
+                    {{ _("Blocking is not currently available because this Incident is not associated with a managed endpoint.") }}
+                </p>
+                {% endif %}
+            </div>
+
+            {% endif %}
+
+            {% if affected_managed_endpoint %}
+
+            <div class="action-card finding action-card-isolate">
+                <h3>{{ _("Isolate Endpoint") }}</h3>
+                <p>{{ _("Request containment of the affected endpoint while preserving the configured SOC communication path.") }}</p>
+
+                {% if already_isolated %}
+                <form method="POST" style="display: inline;"
+                      onsubmit="return confirm('{{ _('Request restoring network connectivity for this endpoint?') }}');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="restore_endpoint">
+                    <button type="submit">{{ _("Restore Endpoint") }}</button>
+                </form>
+                {% else %}
+                <form method="POST" style="display: inline;"
+                      onsubmit="return confirm('{{ _('Request isolation of this endpoint? This may restrict its network connectivity.') }}');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="isolate_endpoint">
+                    <button type="submit" class="delete-button">{{ _("Isolate Endpoint") }}</button>
+                </form>
+                {% endif %}
+            </div>
+
+            {% endif %}
+
+            {% if not (linked_alert and block_target) and not suspicious_destination and not affected_managed_endpoint %}
+            <p>{{ _("No response action is applicable to this Incident.") }}</p>
+            {% endif %}
+
+        </div>
+
+        {% if global_block_target %}
+        <p class="alert-meta-line">
+            <a href="{{ url_for('organization_blocklist_new', target=global_block_target, reason='Escalated from Incident #' ~ event.id, source_type='INCIDENT', source_id=event.id) }}" class="details-link">
+                {{ _("Block Organization-wide (%(target)s)", target=global_block_target) }}
+            </a>
+        </p>
+        {% endif %}
+
+    </div>
+    {% else %}
+    <div class="panel">
+
+        <h2>{{ _("Response Actions") }}</h2>
+
+        <p>
+            {{ _("Current state: destination is %(block_state)s, endpoint is %(isolate_state)s. Only an Administrator can change this.",
+                 block_state=(_("blocked") if already_blocked else _("not blocked")),
+                 isolate_state=(_("isolated") if already_isolated else _("not isolated"))) }}
+        </p>
+
+    </div>
+    {% endif %}
+
+
+    <!-- 7. ACTIVITY & ACTIONS TAKEN -->
+    <div class="panel">
+
+        <h2>{{ _("Activity & Actions Taken") }}</h2>
+
+        <p class="subtitle">
+            {{ _("What was actually requested/executed for this incident's endpoint/destination.") }}
+        </p>
+
+        {% if actions_taken %}
+
+        <table>
+            <tr>
+                <th>{{ _("Command") }}</th>
+                <th>{{ _("Target") }}</th>
+                <th>{{ _("Requested By") }}</th>
+                <th>{{ _("Requested At") }}</th>
+                <th>{{ _("Mode") }}</th>
+                <th>{{ _("Status") }}</th>
+                <th>{{ _("Completed") }}</th>
+                <th>{{ _("Result") }}</th>
+            </tr>
+            {% for command in actions_taken %}
+            <tr>
+                <td>{{ command.command_type|ltr }}</td>
+                <td>{{ (command.target or "-")|ltr }}</td>
+                <td>{{ command.requested_by or "-" }}</td>
+                <td>{{ command.created_at|ltr }}</td>
+                <td>
+                    {% if command.mode == "SIMULATED" %}
+                    <span class="mode-badge mode-badge-simulated">{{ _("SIMULATED") }}</span>
+                    {% elif command.mode == "ENFORCED" %}
+                    <span class="mode-badge mode-badge-enforced">{{ _("ENFORCED") }}</span>
+                    {% else %}
+                    <em>{{ _("awaiting Agent") }}</em>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if command.status == "SUCCESS" %}
+                    <span class="status-open">{{ _("SUCCESS") }}</span>
+                    {% elif command.status == "FAILED" %}
+                    <span class="status-closed">{{ _("FAILED") }}</span>
+                    {% elif command.status == "PENDING" %}
+                    <span class="incident-investigating">{{ _("PENDING") }}</span>
+                    {% elif command.status == "ACKNOWLEDGED" %}
+                    <span class="incident-investigating">{{ _("ACKNOWLEDGED") }}</span>
+                    {% else %}
+                    {{ command.status }}
+                    {% endif %}
+                </td>
+                <td>{{ (command.executed_at or "-")|ltr }}</td>
+                <td>{{ command.result_message or "-" }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        {% else %}
+
+        <p>{{ _("No response action has been requested for this Incident.") }}</p>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- 8. INCIDENT WORKFLOW -->
+    {% if session.get("role") == "admin" %}
+    <div class="panel">
+
+        <h2>{{ _("Incident Workflow") }}</h2>
+
+        <p class="subtitle">{{ _("Update investigation status.") }}</p>
+
+        <div class="workflow-actions">
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <label for="status">{{ _("Incident Status") }}</label>
+
+                <select id="status" name="status">
+                    <option value="OPEN" {% if event.status == "OPEN" %}selected{% endif %}>{{ _("Open") }}</option>
+                    <option value="INVESTIGATING" {% if event.status == "INVESTIGATING" %}selected{% endif %}>{{ _("Investigating") }}</option>
+                    <option value="RESOLVED" {% if event.status == "RESOLVED" %}selected{% endif %}>{{ _("Resolved") }}</option>
+                </select>
+
+                <button type="submit">{{ _("Update Incident") }}</button>
+            </form>
+        </div>
+
+    </div>
+    {% else %}
+    <div class="panel">
+
+        <h2>{{ _("Incident Workflow") }}</h2>
+
+        <p>
+            {{ _("Incident lifecycle management is restricted to administrators. You have read-only access.") }}
+        </p>
+
+    </div>
+    {% endif %}
+
+
+    <div class="panel">
+        <a href="/alerts" class="details-link">
+            &larr; {{ _("Back to Security Alerts") }}
+        </a>
+    </div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function wmCopyIp(button) {
+    var ip = button.getAttribute("data-ip");
+    if (!ip || !navigator.clipboard || !navigator.clipboard.writeText) {
+        return;
+    }
+    navigator.clipboard.writeText(ip).then(function () {
+        var original = button.innerHTML;
+        button.innerHTML = "&#10003;";
+        setTimeout(function () {
+            button.innerHTML = original;
+        }, 1200);
+    });
+}
+</script>
+{% endblock %}

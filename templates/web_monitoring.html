@@ -1,0 +1,2287 @@
+{% extends "base.html" %}
+
+{% block title %}Web Monitoring{% endblock %}
+
+{% block extra_head %}
+<style>
+
+        /* ================================================== */
+        /* WEB MONITORING PAGE                                */
+        /* Page-specific styling (cards/grid/badges/table) on  */
+        /* top of the shared base.html layout/sidebar.         */
+        /* ================================================== */
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            min-height: 100%;
+        }
+
+        body {
+            overflow-x: hidden;
+        }
+
+        /* Sidebar/main layout now comes entirely from
+           base.html (shared across the whole site) - this
+           page's own layout overrides were removed here to
+           keep navigation width/behavior consistent. */
+
+        .wm-page-title {
+
+            margin-top: 0;
+
+            margin-bottom: 8px;
+
+            font-size: 32px;
+        }
+
+
+        .wm-description {
+
+            margin-top: 0;
+
+            margin-bottom: 20px;
+
+            opacity: 0.8;
+        }
+
+
+        /* ================================================== */
+        /* WARNING                                            */
+        /* ================================================== */
+
+        .warning-box {
+
+            width: 100%;
+
+            background: #4f4324;
+
+            border:
+                1px solid
+                #7b692c;
+
+            padding: 14px 16px;
+
+            border-radius: 10px;
+
+            margin-bottom: 24px;
+
+            line-height: 1.5;
+        }
+
+
+        /* ================================================== */
+        /* GRID                                               */
+        /* ================================================== */
+
+        .wm-grid {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    auto-fit,
+                    minmax(
+                        340px,
+                        1fr
+                    )
+                );
+
+            gap: 20px;
+
+            width: 100%;
+
+            margin-bottom: 24px;
+        }
+
+
+        /* ================================================== */
+        /* CARDS                                              */
+        /* ================================================== */
+
+        .wm-card {
+
+            width: 100%;
+
+            min-width: 0;
+
+            background: #151b27;
+
+            border:
+                1px solid
+                #273249;
+
+            border-radius: 14px;
+
+            padding: 22px;
+
+            margin-bottom: 24px;
+
+            overflow: hidden;
+        }
+
+
+        .wm-card h3 {
+
+            margin:
+                0
+                0
+                20px
+                0;
+
+            font-size: 20px;
+        }
+
+
+        /* ================================================== */
+        /* FORM                                               */
+        /* ================================================== */
+
+        .wm-form {
+
+            width: 100%;
+        }
+
+
+        .wm-form label {
+
+            display: block;
+
+            margin-bottom: 6px;
+
+            font-weight: 600;
+        }
+
+
+        .wm-form input {
+
+            display: block;
+
+            width: 100% !important;
+
+            max-width: 700px;
+
+            height: 46px;
+
+            margin:
+                0
+                0
+                18px
+                0;
+
+            padding:
+                10px
+                12px;
+
+            border-radius: 8px;
+
+            border:
+                1px solid
+                #36445f;
+
+            background: #0e1420;
+
+            color: #ffffff;
+
+            font-size: 15px;
+        }
+
+
+        .wm-form input:focus {
+
+            outline: none;
+
+            border-color: #5879ff;
+        }
+
+
+        /* ================================================== */
+        /* BUTTONS                                            */
+        /* ================================================== */
+
+        .wm-button {
+
+            display: inline-block;
+
+            border: none;
+
+            border-radius: 8px;
+
+            padding:
+                11px
+                17px;
+
+            cursor: pointer;
+
+            font-weight: 700;
+
+            font-size: 14px;
+
+            text-decoration: none;
+        }
+
+
+        .wm-button-primary {
+
+            background: #3d6cff;
+
+            color: #ffffff;
+        }
+
+
+        .wm-button-danger {
+
+            background: #a62e3b;
+
+            color: #ffffff;
+        }
+
+
+        .wm-button-safe {
+
+            background: #26734d;
+
+            color: #ffffff;
+        }
+
+
+        .wm-button-muted {
+
+            background: #3b4558;
+
+            color: #ffffff;
+        }
+
+
+        .wm-button:hover {
+
+            filter: brightness(1.1);
+        }
+
+
+        /* ================================================== */
+        /* TABLE                                              */
+        /* ================================================== */
+
+        .wm-table-wrap {
+
+            width: 100%;
+
+            overflow-x: auto;
+        }
+
+
+        .wm-table {
+
+            width: 100%;
+
+            min-width: 980px;
+
+            border-collapse: collapse;
+
+            table-layout: auto;
+        }
+
+
+        .wm-table th,
+        .wm-table td {
+
+            padding:
+                13px
+                12px;
+
+            border-bottom:
+                1px solid
+                #273249;
+
+            text-align: left;
+
+            vertical-align: middle;
+        }
+
+
+        .wm-table th {
+
+            color: #aab8d0;
+
+            font-size: 14px;
+        }
+
+
+        .wm-table td {
+
+            font-size: 14px;
+        }
+
+
+        /* ================================================== */
+        /* BADGES                                             */
+        /* ================================================== */
+
+        .badge {
+
+            display: inline-block;
+
+            padding:
+                6px
+                10px;
+
+            border-radius: 999px;
+
+            font-size: 12px;
+
+            font-weight: 800;
+        }
+
+
+        .badge-info {
+
+            background: #29334b;
+        }
+
+
+        .badge-low {
+
+            background: #2b5260;
+        }
+
+
+        .badge-medium {
+
+            background: #765e22;
+        }
+
+
+        .badge-high {
+
+            background: #8b3c31;
+        }
+
+
+        .badge-critical {
+
+            background: #9b2335;
+        }
+
+
+        .badge-allowed {
+
+            background: #235c43;
+        }
+
+
+        .badge-blocked {
+
+            background: #8b2f3d;
+        }
+
+
+        .badge-isolated {
+
+            background: #8b2f3d;
+        }
+
+
+        .badge-connected {
+
+            background: #235c43;
+        }
+
+
+        .badge-pending {
+
+            background: #475569;
+        }
+
+
+        .badge-online {
+
+            background: #235c43;
+        }
+
+
+        .badge-stale {
+
+            background: #765e22;
+        }
+
+
+        .badge-offline {
+
+            background: #8b2f3d;
+        }
+
+
+        .badge-unknown {
+
+            background: #475569;
+        }
+
+
+        .badge-analyzing {
+
+            background: #1e3a5f;
+
+            color: #93c5fd;
+        }
+
+
+        .badge-analyzed {
+
+            background: #235c43;
+        }
+
+
+        .badge-error {
+
+            background: #8b2f3d;
+        }
+
+
+        /* .wm-ip-cell / .wm-ip-inline / .wm-ip-mono / .wm-copy-btn
+           moved to static/style.css (shared, reused by the
+           Security Operations page's Destination column too). */
+
+
+        .wm-details-grid {
+
+            display: grid;
+
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+
+            gap: 8px 24px;
+
+            padding: 10px 4px;
+
+            font-size: 13px;
+        }
+
+
+        .wm-attribution-symbol {
+
+            opacity: 0.85;
+
+            margin-left: 3px;
+        }
+
+
+        .provider-badge {
+
+            display: inline-block;
+
+            padding:
+                2px
+                7px;
+
+            border-radius: 6px;
+
+            font-size: 10px;
+
+            font-weight: bold;
+
+            letter-spacing: 0.04em;
+
+            background: #1e3a5f;
+
+            color: #93c5fd;
+
+            margin-right: 6px;
+        }
+
+
+        /* ================================================== */
+        /* NOTICES                                            */
+        /* ================================================== */
+
+        .notice {
+
+            width: 100%;
+
+            padding:
+                13px
+                15px;
+
+            border-radius: 10px;
+
+            margin-bottom: 18px;
+        }
+
+
+        .notice-error {
+
+            background: #51242c;
+        }
+
+
+        .notice-success {
+
+            background: #204936;
+        }
+
+
+        .muted {
+
+            opacity: 0.75;
+        }
+
+
+        .reason-list {
+
+            padding-left: 20px;
+
+            line-height: 1.7;
+        }
+
+
+        .action-form {
+
+            display: inline;
+        }
+
+
+    </style>
+{% endblock %}
+
+{% block content %}
+{# Sidebar/nav now comes from base.html - the old page-local
+   <aside class="sidebar"> markup that used to live here was
+   removed during the Phase 8 UI cleanup. #}
+
+        <h1 class="wm-page-title">
+
+            Web Activity Monitoring
+
+        </h1>
+
+
+        <p class="wm-description">
+
+            Monitor endpoint web destinations,
+            resolve domains to IP addresses,
+            enrich them with threat intelligence,
+            and generate SOC response decisions.
+
+        </p>
+
+
+        <div class="warning-box">
+
+            <strong>
+                Response Mode:
+            </strong>
+
+            Containment actions are initiated from Security Alerts
+            and Incidents, not from this page. See
+            <a href="{{ url_for('response_actions') }}">Response Actions</a>
+            for whether each command was simulated or actually
+            enforced by the Endpoint Agent.
+
+        </div>
+
+
+        {% if error %}
+
+
+            <div class="
+                notice
+                notice-error
+            ">
+
+                {{ error }}
+
+            </div>
+
+
+        {% endif %}
+
+
+        {% if success %}
+
+
+            <div class="
+                notice
+                notice-success
+            ">
+
+                {{ success }}
+
+            </div>
+
+
+        {% endif %}
+
+
+        {% if cf_message %}
+
+            <div class="notice notice-success">
+                Cloudflare: {{ cf_message }}
+                {% if cf_budget %}
+                <span style="color:#94a3b8;">(Cloudflare application budget: {{ cf_budget["used"] }} / {{ cf_budget["budget"] }} used)</span>
+                {% endif %}
+            </div>
+
+        {% endif %}
+
+        {% if url_intel_message %}
+
+            <div class="notice {% if url_intel_message == 'blocked' %}notice-error{% else %}notice-success{% endif %}">
+                {% if url_intel_message == "blocked" %}
+                URL investigation was blocked by the server-side privacy policy (event #{{ url_intel_event_id }}).
+                {% elif url_intel_message == "in_progress" %}
+                A check for this URL was already in progress (event #{{ url_intel_event_id }}) - no duplicate external request was sent.
+                {% else %}
+                URL investigation requested with {{ url_intel_message }} for event #{{ url_intel_event_id }}.
+                {% endif %}
+            </div>
+
+        {% endif %}
+
+
+        <div class="wm-grid">
+
+
+            <section class="wm-card">
+
+
+                <h3>
+
+                    Manual Destination Analysis
+
+                </h3>
+
+                <p class="subtitle">
+
+                    Analyst-initiated analysis of a destination in
+                    the context of a managed endpoint. This is not
+                    automatically observed endpoint telemetry.
+
+                </p>
+
+
+                <form
+                    method="POST"
+                    class="wm-form"
+                >
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+
+
+                    <label
+                        for="endpoint_ip"
+                    >
+
+                        Managed Endpoint
+
+                    </label>
+
+
+                    <select
+                        id="endpoint_ip"
+                        name="endpoint_ip"
+                        required
+                    >
+
+                        <option value="">
+                            Select a managed endpoint...
+                        </option>
+
+                        {% for endpoint in endpoints %}
+                        <option value="{{ endpoint['ip_address'] }}">
+                            {% if endpoint['hostname'] %}{{ endpoint['hostname'] }} ({{ endpoint['ip_address'] }}){% else %}{{ endpoint['ip_address'] }}{% endif %}
+                        </option>
+                        {% endfor %}
+
+                    </select>
+
+
+                    <label
+                        for="destination"
+                    >
+
+                        Website / Domain / URL
+
+                    </label>
+
+
+                    <input
+                        id="destination"
+                        type="text"
+                        name="destination"
+                        placeholder="https://example.com"
+                        required
+                    >
+
+
+                    <button
+                        type="submit"
+                        class="
+                            wm-button
+                            wm-button-primary
+                        "
+                    >
+
+                        Analyze Destination
+
+                    </button>
+
+
+                </form>
+
+
+            </section>
+
+
+            {% if analysis %}
+
+
+                <section class="wm-card">
+
+
+                    <h3>
+
+                        Latest Analysis
+
+                    </h3>
+
+
+                    <p>
+
+                        <strong>
+                            Endpoint:
+                        </strong>
+
+                        {{ analysis.endpoint_ip }}
+
+                    </p>
+
+
+                    <p>
+
+                        <strong>
+                            Domain:
+                        </strong>
+
+                        {{ analysis.domain }}
+
+                    </p>
+
+
+                    <p>
+
+                        <strong>
+                            Resolved IP:
+                        </strong>
+
+                        {{
+                            analysis.resolved_ip
+                            or
+                            "N/A"
+                        }}
+
+                    </p>
+
+
+                    <p>
+
+                        <strong>
+                            Risk Score:
+                        </strong>
+
+                        {{
+                            analysis.risk_score
+                        }}/100
+
+                    </p>
+
+
+                    <p>
+
+                        <strong>
+                            Severity:
+                        </strong>
+
+
+                        <span
+                            class="
+                                badge
+                                badge-{{ analysis.severity|lower }}
+                            "
+                        >
+
+                            {{ analysis.severity }}
+
+                        </span>
+
+                    </p>
+
+
+                    <p>
+
+                        <strong>
+                            Decision:
+                        </strong>
+
+
+                        <span
+                            class="
+                                badge
+                                badge-{{ analysis.decision|lower }}
+                            "
+                        >
+
+                            {{ analysis.decision }}
+
+                        </span>
+
+                    </p>
+
+
+                    {% if analysis.reasons %}
+
+
+                        <strong>
+
+                            Correlation Analysis:
+
+                        </strong>
+
+
+                        <ul class="reason-list">
+
+
+                            {% for reason in analysis.reasons %}
+
+
+                                <li>
+
+                                    {{ reason }}
+
+                                </li>
+
+
+                            {% endfor %}
+
+
+                        </ul>
+
+
+                    {% endif %}
+
+
+                </section>
+
+
+            {% endif %}
+
+
+        </div>
+
+
+        <!-- ================================================== -->
+        <!-- ENDPOINTS                                          -->
+        <!-- ================================================== -->
+
+
+        <section class="wm-card">
+
+
+            <h3>
+
+                Managed Endpoints
+
+            </h3>
+
+            <p class="subtitle">
+
+                Only endpoints genuinely observed through
+                authenticated Endpoint Agent telemetry are shown
+                here. Containment (Isolate/Restore) is requested
+                from Security Alerts and Incidents, not from this
+                table - see
+                <a href="{{ url_for('response_actions') }}">Response Actions</a>.
+
+            </p>
+
+
+            <div class="wm-table-wrap">
+
+
+                <table class="wm-table">
+
+
+                    <thead>
+
+
+                        <tr>
+
+
+                            <th>
+                                IP Address
+                            </th>
+
+
+                            <th>
+                                Hostname
+                            </th>
+
+
+                            <th>
+                                Presence
+                            </th>
+
+
+                            <th>
+                                Last Agent Activity
+                            </th>
+
+
+                            <th>
+                                Actions
+                            </th>
+
+
+                        </tr>
+
+
+                    </thead>
+
+
+                    <tbody>
+
+
+                        {% for endpoint in endpoints %}
+
+
+                            <tr>
+
+
+                                <td>
+
+                                    {{
+                                        endpoint[
+                                            "ip_address"
+                                        ]
+                                    }}
+
+                                </td>
+
+
+                                <td>
+
+                                    {{
+                                        endpoint[
+                                            "hostname"
+                                        ]
+                                        or
+                                        "-"
+                                    }}
+
+                                </td>
+
+
+                                <td>
+
+
+                                    <span
+                                        class="
+                                            badge
+                                            badge-{{ endpoint['presence']|lower }}
+                                        "
+                                        {% if endpoint["presence"] == "ONLINE" %}
+                                        title="Recent Agent activity received within the last 2 minutes."
+                                        {% elif endpoint["presence"] == "STALE" %}
+                                        title="Last Agent activity was more than 2 minutes ago. This does not necessarily mean the Agent is offline."
+                                        {% elif endpoint["presence"] == "OFFLINE" %}
+                                        title="No Agent activity has been received for more than 24 hours."
+                                        {% else %}
+                                        title="Agent activity time is unavailable."
+                                        {% endif %}
+                                    >
+
+                                        {{
+                                            endpoint[
+                                                "presence"
+                                            ]
+                                        }}
+
+                                    </span>
+
+
+                                </td>
+
+
+                                <td>
+
+                                    {{
+                                        endpoint[
+                                            "last_seen"
+                                        ]
+                                        or
+                                        "-"
+                                    }}
+
+                                </td>
+
+
+                                <td>
+
+                                    <a
+                                        href="{{ url_for('web_monitoring.web_monitoring', q=endpoint['ip_address']) }}"
+                                        class="wm-button wm-button-safe"
+                                        style="margin-right: 8px;"
+                                    >
+                                        View Activity
+                                    </a>
+
+                                    <a
+                                        href="{{ url_for('alerts', endpoint_ip=endpoint['ip_address']) }}"
+                                        class="wm-button wm-button-safe"
+                                    >
+                                        View Alerts
+                                    </a>
+
+                                </td>
+
+
+                            </tr>
+
+
+                        {% else %}
+
+
+                            <tr>
+
+
+                                <td colspan="5">
+
+                                    No managed endpoints recorded yet.
+
+                                </td>
+
+
+                            </tr>
+
+
+                        {% endfor %}
+
+
+                    </tbody>
+
+
+                </table>
+
+
+            </div>
+
+
+        </section>
+
+
+        <!-- ================================================== -->
+        <!-- BLOCKED DESTINATIONS                               -->
+        <!-- ================================================== -->
+
+
+        <section class="wm-card">
+
+
+            <h3>
+
+                Blocked Destinations
+
+            </h3>
+
+
+            <div class="wm-table-wrap">
+
+
+                <table class="wm-table">
+
+
+                    <thead>
+
+
+                        <tr>
+
+
+                            <th>
+                                Domain
+                            </th>
+
+
+                            <th>
+                                Severity
+                            </th>
+
+
+                            <th>
+                                Reason
+                            </th>
+
+
+                            <th>
+                                Status
+                            </th>
+
+
+                            <th>
+                                Enforcement
+                            </th>
+
+
+                            <th>
+                                Action
+                            </th>
+
+
+                        </tr>
+
+
+                    </thead>
+
+
+                    <tbody>
+
+
+                        {% for item in blocked_domains %}
+
+
+                            <tr>
+
+
+                                <td>
+
+                                    {{
+                                        item[
+                                            "domain"
+                                        ]
+                                    }}
+
+                                </td>
+
+
+                                <td>
+
+
+                                    <span
+                                        class="
+                                            badge
+                                            badge-{{ item['severity']|lower }}
+                                        "
+                                    >
+
+                                        {{
+                                            item[
+                                                "severity"
+                                            ]
+                                        }}
+
+                                    </span>
+
+
+                                </td>
+
+
+                                <td>
+
+                                    {{
+                                        item[
+                                            "reason"
+                                        ]
+                                        or
+                                        "-"
+                                    }}
+
+                                </td>
+
+
+                                <td>
+
+
+                                    {% if item["active"] == 1 %}
+
+
+                                        <span
+                                            class="
+                                                badge
+                                                badge-blocked
+                                            "
+                                        >
+
+                                            ACTIVE
+
+                                        </span>
+
+
+                                    {% else %}
+
+
+                                        <span
+                                            class="badge badge-info"
+                                        >
+
+                                            DISABLED
+
+                                        </span>
+
+
+                                    {% endif %}
+
+
+                                </td>
+
+
+                                <td>
+
+                                    {% if item["enforcement_status"] == "ENFORCED" %}
+                                    <span class="mode-badge mode-badge-enforced">ENFORCED</span>
+                                    {% elif item["active"] == 1 %}
+                                    <span class="mode-badge mode-badge-simulated">POLICY_ONLY</span>
+                                    {% else %}
+                                    <span class="muted">-</span>
+                                    {% endif %}
+
+                                </td>
+
+
+                                <td>
+
+
+                                    {% if session.get("role") == "admin" %}
+
+
+                                        <form
+                                            method="POST"
+                                            action="{{
+                                                url_for(
+                                                    'web_monitoring.toggle_blocked_domain',
+                                                    block_id=item['id']
+                                                )
+                                            }}"
+                                        >
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+
+
+                                            <button
+                                                type="submit"
+                                                class="
+                                                    wm-button
+                                                    wm-button-muted
+                                                "
+                                            >
+
+
+                                                {% if item["active"] == 1 %}
+
+                                                    Disable
+
+                                                {% else %}
+
+                                                    Enable
+
+                                                {% endif %}
+
+
+                                            </button>
+
+
+                                        </form>
+
+
+                                    {% else %}
+
+
+                                        Analyst View
+
+
+                                    {% endif %}
+
+
+                                </td>
+
+
+                            </tr>
+
+
+                        {% else %}
+
+
+                            <tr>
+
+
+                                <td colspan="5">
+
+                                    No blocked destinations.
+
+                                </td>
+
+
+                            </tr>
+
+
+                        {% endfor %}
+
+
+                    </tbody>
+
+
+                </table>
+
+
+            </div>
+
+
+        </section>
+
+
+        <!-- ================================================== -->
+        <!-- RECENT EVENTS                                      -->
+        <!-- ================================================== -->
+
+
+        <section class="wm-card">
+
+
+            <h3>
+
+                Recent Web Events
+
+            </h3>
+
+
+            <!-- Step 24A.3: quick source tabs - pure UX shortcuts over the
+                 SAME source filter the dropdown below already uses; no new
+                 backend parameter, every other active filter is preserved
+                 via dict(request.args, ...) overriding only source/page. -->
+            <div class="wm-source-tabs" style="display:flex; gap:6px; margin-bottom:10px;">
+                <a
+                    href="{{ url_for('web_monitoring.web_monitoring', **dict(request.args, source='', before_id='', after_id='')) }}"
+                    class="wm-tab {% if not source_filter %}wm-tab-active{% endif %}"
+                >All</a>
+                <a
+                    href="{{ url_for('web_monitoring.web_monitoring', **dict(request.args, source='endpoint-agent', before_id='', after_id='')) }}"
+                    class="wm-tab {% if source_filter == 'endpoint-agent' %}wm-tab-active{% endif %}"
+                >Network</a>
+                <a
+                    href="{{ url_for('web_monitoring.web_monitoring', **dict(request.args, source='browser-extension', before_id='', after_id='')) }}"
+                    class="wm-tab {% if source_filter == 'browser-extension' %}wm-tab-active{% endif %}"
+                >Browsing</a>
+            </div>
+
+            {% if date_range_note %}
+            <div class="info-box" style="margin-bottom:10px;">{{ date_range_note }}</div>
+            {% endif %}
+
+            <form
+                method="GET"
+                style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 15px;"
+            >
+
+                <div>
+                    <label for="wm_severity">Severity</label>
+                    <select id="wm_severity" name="severity">
+                        <option value="">All</option>
+                        {% for value in ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO", "PENDING"] %}
+                        <option value="{{ value }}" {% if severity_filter == value %}selected{% endif %}>{{ value }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label for="wm_decision">Decision</label>
+                    <select id="wm_decision" name="decision">
+                        <option value="">All</option>
+                        {% for value in ["ALLOWED", "BLOCKED", "PENDING"] %}
+                        <option value="{{ value }}" {% if decision_filter == value %}selected{% endif %}>{{ value }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label for="wm_attribution">Attribution</label>
+                    <select id="wm_attribution" name="attribution">
+                        <option value="">All</option>
+                        <option value="dns" {% if attribution_filter == "dns" %}selected{% endif %}>DNS</option>
+                        <option value="rdns" {% if attribution_filter == "rdns" %}selected{% endif %}>rDNS</option>
+                        <option value="ip" {% if attribution_filter == "ip" %}selected{% endif %}>IP only</option>
+                        <option value="unknown" {% if attribution_filter == "unknown" %}selected{% endif %}>Unknown</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="wm_process">Process</label>
+                    <select id="wm_process" name="process">
+                        <option value="">All</option>
+                        {% for row in distinct_processes %}
+                        <option value="{{ row['process_name'] }}" {% if process_filter == row['process_name'] %}selected{% endif %}>{{ row['process_name'] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label for="wm_source">Source</label>
+                    <select id="wm_source" name="source">
+                        <option value="">All</option>
+                        <option value="endpoint-agent" {% if source_filter == "endpoint-agent" %}selected{% endif %}>Endpoint Agent</option>
+                        <option value="browser-extension" {% if source_filter == "browser-extension" %}selected{% endif %}>Browser Extension</option>
+                        <option value="manual" {% if source_filter == "manual" %}selected{% endif %}>Manual</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="wm_analysis_status">Analysis</label>
+                    <select id="wm_analysis_status" name="analysis_status">
+                        <option value="">All</option>
+                        {% for value in ["PENDING", "ANALYZING", "ANALYZED", "ERROR", "COLLECTED"] %}
+                        <option value="{{ value }}" {% if analysis_status_filter == value %}selected{% endif %}>{{ value }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label for="wm_endpoint_uid">Computer</label>
+                    <select id="wm_endpoint_uid" name="endpoint_uid">
+                        <option value="">All</option>
+                        {% for computer in distinct_computers %}
+                        <option value="{{ computer['endpoint_uid'] }}" {% if endpoint_uid_filter == computer['endpoint_uid'] %}selected{% endif %}>{{ computer['hostname'] or computer['ip_address'] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label for="wm_date_from">From date</label>
+                    <input id="wm_date_from" type="date" name="date_from" value="{{ date_from_filter or '' }}">
+                </div>
+
+                <div>
+                    <label for="wm_date_to">To date</label>
+                    <input id="wm_date_to" type="date" name="date_to" value="{{ date_to_filter or '' }}">
+                </div>
+
+                <div>
+                    <label for="wm_q">Search</label>
+                    <input
+                        id="wm_q"
+                        type="text"
+                        name="q"
+                        value="{{ search_filter }}"
+                        placeholder="destination, IP, URL, process, endpoint..."
+                    >
+                </div>
+
+                <button type="submit">Apply Filter</button>
+                <a href="{{ url_for('web_monitoring.web_monitoring') }}" class="details-link">Clear</a>
+
+            </form>
+
+
+            <div class="wm-table-wrap">
+
+
+                <table class="wm-table">
+
+
+                    <thead>
+
+
+                        <tr>
+
+
+                            <th>
+                                Time
+                            </th>
+
+
+                            <th>
+                                Endpoint
+                            </th>
+
+
+                            <th>
+                                Process
+                            </th>
+
+
+                            <th>
+                                OS User
+                            </th>
+
+
+                            <th>
+                                Destination / Service
+                            </th>
+
+
+                            <th>
+                                Destination IP
+                            </th>
+
+
+                            <th>
+                                Attribution
+                            </th>
+
+
+                            <th>
+                                Analysis
+                            </th>
+
+
+                            <th>
+                                Risk
+                            </th>
+
+
+                            <th>
+                                Severity
+                            </th>
+
+
+                            <th>
+                                Decision
+                            </th>
+
+
+                            <th>
+                                Behavior
+                            </th>
+
+
+                            <th>
+                                Alert
+                            </th>
+
+
+                            <th>
+                                Details
+                            </th>
+
+
+                        </tr>
+
+
+                    </thead>
+
+
+                    <tbody>
+
+
+                        {% for event in events %}
+
+
+                            <tr>
+
+
+                                <td>
+
+                                    {{
+                                        event[
+                                            "event_time"
+                                        ]
+                                    }}
+
+                                </td>
+
+
+                                <td>
+
+                                    {% if event["endpoint_hostname"] %}
+                                    {{ event["endpoint_hostname"] }}
+                                    <br>
+                                    <small>{{ event["endpoint_ip"] }}</small>
+                                    {% else %}
+                                    {{ event["endpoint_ip"] }}
+                                    {% endif %}
+
+                                </td>
+
+
+                                <td>
+
+                                    {{ event["process_name"] or "Unknown" }}
+
+                                </td>
+
+
+                                <td>
+
+                                    {{ event["os_username"] or "-" }}
+
+                                </td>
+
+
+                                <td>
+
+                                    {% if event["provider_label"] %}
+                                    <span class="provider-badge">{{ event["provider_label"] }}</span>
+                                    {% endif %}
+                                    {% if event["url_source"] == "browser_extension" %}
+                                    <span class="rdns-badge" title="Step 24A: reported by a browser extension (webNavigation), not observed as a TCP connection.">Browser ({{ event["browser_name"] or "?" }})</span>
+                                    {% endif %}
+                                    {{
+                                        event[
+                                            "domain"
+                                        ]
+                                        or
+                                        event[
+                                            "destination"
+                                        ]
+                                    }}
+
+                                </td>
+
+
+                                <td class="wm-ip-cell">
+
+                                    {% if event["destination_ip_display"] %}
+                                    <span class="wm-ip-inline">
+                                        <span
+                                            class="wm-ip-mono{% if event['destination_ip_display']|length > 15 %} wm-ip-long{% endif %}"
+                                            title="{{ event['destination_ip_display'] }}"
+                                        >{{ event["destination_ip_display"] }}</span>
+                                        <button
+                                            type="button"
+                                            class="wm-copy-btn"
+                                            data-ip="{{ event['destination_ip_display'] }}"
+                                            onclick="wmCopyIp(this)"
+                                            title="Copy full IP address"
+                                        >&#10697;</button>
+                                    </span>
+                                    {% else %}
+                                    -
+                                    {% endif %}
+
+                                </td>
+
+
+                                <td>
+
+                                    {% if event["attribution_type"] == "dns" %}
+                                    <span class="rdns-badge" title="Hostname observed through DNS telemetry. Higher-confidence domain attribution.">DNS <span class="wm-attribution-symbol">&#10003;</span></span>
+                                    {% elif event["attribution_type"] == "rdns" %}
+                                    <span class="rdns-badge" title="Hostname inferred from reverse DNS. Useful enrichment, but not proof that the endpoint requested this hostname.">rDNS <span class="wm-attribution-symbol">~</span></span>
+                                    {% elif event["attribution_type"] == "ip" %}
+                                    <span class="rdns-badge" title="Only the destination IP was observed. No reliable hostname attribution is available.">IP only</span>
+                                    {% else %}
+                                    <span class="rdns-badge" title="Attribution unknown - this event predates attribution tracking or was submitted manually">Unknown</span>
+                                    {% endif %}
+
+                                </td>
+
+
+                                <td>
+
+                                    {% if event["analysis_status"] == "ERROR" %}
+                                    <span class="badge badge-error" title="{{ event['analysis_error'] or 'Analysis failed.' }}">ERROR</span>
+                                    {% elif event["analysis_status"] == "ANALYZING" %}
+                                    <span class="badge badge-analyzing">ANALYZING</span>
+                                    {% elif event["analysis_status"] == "ANALYZED" %}
+                                    <span class="badge badge-analyzed">ANALYZED</span>
+                                    {% elif event["analysis_status"] == "COLLECTED" %}
+                                    <span class="badge badge-analyzed" title="Step 24A: browser-reported URL event. Collection only - not yet fed into Threat Intelligence/risk scoring (deferred to a separately approved later step).">COLLECTED</span>
+                                    {% else %}
+                                    <span class="badge badge-pending">PENDING</span>
+                                    {% endif %}
+
+                                </td>
+
+
+                                <td>
+
+                                    {% if event["analysis_status"] == "ANALYZED" %}
+                                    {{
+                                        event[
+                                            "risk_score"
+                                        ]
+                                    }}/100
+                                    {% else %}
+                                    &mdash;
+                                    {% endif %}
+
+                                </td>
+
+
+                                <td>
+
+                                    {% if event["analysis_status"] == "ANALYZED" %}
+
+                                    <span
+                                        class="
+                                            badge
+                                            badge-{{ event['severity']|lower }}
+                                        "
+                                    >
+
+                                        {{
+                                            event[
+                                                "severity"
+                                            ]
+                                        }}
+
+                                    </span>
+
+                                    {% else %}
+                                    &mdash;
+                                    {% endif %}
+
+
+                                </td>
+
+
+                                <td>
+
+                                    {% if event["analysis_status"] == "ANALYZED" %}
+
+                                    <span
+                                        class="
+                                            badge
+                                            badge-{{ event['decision']|lower }}
+                                        "
+                                    >
+
+                                        {{
+                                            event[
+                                                "decision"
+                                            ]
+                                        }}
+
+                                    </span>
+
+                                    {% else %}
+                                    &mdash;
+                                    {% endif %}
+
+
+                                </td>
+
+
+                                <td>
+
+                                    {% if event["behavioral_display_label"] == "UNUSUAL" %}
+                                    <span class="badge badge-blocked">UNUSUAL</span>
+                                    {% elif event["behavioral_display_label"] == "TYPICAL" %}
+                                    <span class="badge badge-analyzed">TYPICAL</span>
+                                    {% elif event["behavioral_display_label"] == "LEARNING" %}
+                                    <span class="badge badge-pending">LEARNING</span>
+                                    {% elif event["behavioral_display_label"] == "NOT SCORED" %}
+                                    <span class="badge badge-pending">NOT SCORED</span>
+                                    {% else %}
+                                    &mdash;
+                                    {% endif %}
+
+                                </td>
+
+
+                                <td>
+
+                                    {% if event["alert_id"] %}
+                                    <a href="{{ url_for('alert_details', alert_id=event['alert_id']) }}" class="badge badge-blocked">Alert #{{ event["alert_id"] }}</a>
+                                    {% else %}
+                                    &mdash;
+                                    {% endif %}
+
+                                </td>
+
+
+                                <td>
+
+                                    {% if event["process_path"] or event["sha256"] or event["md5"] or event["is_script_related"] is not none or event["behavioral_result"] or (event["ti_evidence_multi"] and event["ti_evidence_multi"] | selectattr("lookup_status", "in", ["MATCH", "NO_MATCH", "ERROR", "RATE_LIMITED"]) | list) or event["cf_actions"] or event["investigation_priority_level"] != "ROUTINE" %}
+                                    <button type="button" class="wm-copy-btn" data-target="wm-details-{{ event['id'] }}" onclick="wmToggleDetails(this)">Details</button>
+                                    {% else %}
+                                    &mdash;
+                                    {% endif %}
+                                    <a href="{{ url_for('investigation_event', event_id=event['id']) }}" class="wm-copy-btn" style="text-decoration: none; display: inline-block; margin-inline-start: 4px;">Investigate</a>
+
+                                </td>
+
+
+                            </tr>
+
+
+                            {% if event["process_path"] or event["sha256"] or event["md5"] or event["is_script_related"] is not none or event["behavioral_result"] or (event["ti_evidence_multi"] and event["ti_evidence_multi"] | selectattr("lookup_status", "in", ["MATCH", "NO_MATCH", "ERROR", "RATE_LIMITED"]) | list) or event["cf_actions"] or event["investigation_priority_level"] != "ROUTINE" %}
+                            <tr id="wm-details-{{ event['id'] }}" class="wm-details-row" style="display: none;">
+
+                                <td colspan="14">
+
+                                    {% if event["behavioral_result"] %}
+                                    <div class="wm-details-grid" style="border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 10px;">
+
+                                        <div><strong>Behavioral Analysis</strong></div>
+
+                                        <div>
+                                            <strong>Anomaly Score:</strong>
+                                            {% if event["behavioral_result"]["anomaly_score"] is not none %}
+                                            {{ event["behavioral_result"]["anomaly_score"] }}/100
+                                            {% else %}
+                                            -
+                                            {% endif %}
+                                        </div>
+
+                                        <div><strong>Baseline Confidence:</strong> {{ event["behavioral_result"]["confidence"] or "-" }}</div>
+
+                                        <div><strong>Maturity:</strong> {{ event["behavioral_result"]["maturity_state_at_evaluation"] or "-" }}</div>
+
+                                        <div><strong>Temporal Baseline:</strong> {{ event["behavioral_result"]["temporal_status"] or "-" }}</div>
+
+                                        <div><strong>Evaluation Status:</strong> {{ event["behavioral_result"]["evaluation_status"] }}</div>
+
+                                        <div style="grid-column: 1 / -1;">
+                                            <strong>Reasons:</strong>
+                                            {% if event["behavioral_reasons_list"] %}
+                                            <ul style="margin: 4px 0 0 18px; padding: 0;">
+                                                {% for reason in event["behavioral_reasons_list"] %}
+                                                <li>{{ reason }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                            {% else %}
+                                            None
+                                            {% endif %}
+                                        </div>
+
+                                    </div>
+                                    {% endif %}
+
+                                    {% if event["url"] %}
+                                    <div class="wm-details-grid" style="border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 10px;">
+                                        <div style="grid-column: 1 / -1;"><strong>Browser-Reported URL (Step 24A)</strong></div>
+                                        <div style="grid-column: 1 / -1; font-size: 13px; color: #94a3b8;">
+                                            Collected from a managed browser extension, independently of the TCP/domain monitoring above - stored as its own event, not asserted to correspond to any specific connection row.
+                                        </div>
+                                        <div style="grid-column: 1 / -1;">
+                                            <strong>URL:</strong>
+                                            <span class="wm-ip-mono">{{ event["url"] | ltr }}</span>
+                                            {% if event["url_redacted"] %}
+                                            <span class="rdns-badge" title="Query string and/or fragment were removed before this URL ever left the browser - this is not the complete original address.">reduced</span>
+                                            {% endif %}
+                                        </div>
+                                        <div><strong>Browser:</strong> {{ event["browser_name"] or "-" }}</div>
+                                        <div><strong>Navigation type:</strong> {{ event["url_nav_type"] or "-" }}</div>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if event["url_intel_actions"] %}
+                                    <div class="wm-details-grid" style="border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 10px;">
+                                        <div style="grid-column: 1 / -1;"><strong>URL Threat Intelligence (Step 24B.1 - display and manual check only)</strong></div>
+                                        <div style="grid-column: 1 / -1; font-size: 13px; color: #94a3b8;">
+                                            "No threat found" reflects only what this specific provider has checked as of the time shown - it is never proof that the destination is safe.
+                                        </div>
+                                        {% for action in event["url_intel_actions"] %}
+                                        <div style="grid-column: 1 / -1; display:flex; align-items:center; gap:10px; flex-wrap: wrap;">
+                                            <strong>{{ action["provider"] }}:</strong>
+                                            {% if action["status"] == "THREAT_DETECTED" %}
+                                            <span class="badge badge-critical" title="{{ action.get('reason', '') }}">Threat detected</span>
+                                            {% elif action["status"] == "POSSIBLE_THREAT_UNCONFIRMED" %}
+                                            <span class="badge badge-medium" title="{{ action.get('reason', '') }}">Possible threat (unconfirmed report)</span>
+                                            {% elif action["status"] == "NO_THREAT" %}
+                                            <span class="badge badge-analyzed" title="{{ action.get('reason', '') }}">Checked - no threat found</span>
+                                            {% elif action["status"] == "CHECK_FAILED" %}
+                                            <span class="badge badge-error" title="{{ action.get('reason', '') }}">Check failed</span>
+                                            {% elif action["status"] == "UNAVAILABLE" %}
+                                            <span class="badge badge-pending" title="{{ action.get('reason', '') }}">Unavailable</span>
+                                            {% else %}
+                                            <span class="badge badge-pending">Not checked</span>
+                                            {% endif %}
+                                            {% if action["checked_at"] %}
+                                            <span style="color:#64748b; font-size:12px;">checked {{ action["checked_at"] | ltr }}</span>
+                                            {% endif %}
+                                            {% if action.get("reason") %}
+                                            <span style="color:#94a3b8; font-size:12px;">{{ action["reason"] }}</span>
+                                            {% endif %}
+                                            <form method="POST" action="{{ url_for('url_intel_investigate') }}" style="display:inline; margin: 0;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <input type="hidden" name="provider" value="{{ action['provider'] }}">
+                                                <input type="hidden" name="event_id" value="{{ event['id'] }}">
+                                                <button type="submit" class="wm-copy-btn">Investigate URL</button>
+                                            </form>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+
+                                    {% if event["local_feed_actions"] %}
+                                    <div class="wm-details-grid" style="border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 10px;">
+                                        <div style="grid-column: 1 / -1;"><strong>Local Threat Intelligence (Step 24B.2A - local feed, no external call)</strong></div>
+                                        <div style="grid-column: 1 / -1; font-size: 13px; color: #94a3b8;">
+                                            "No match" reflects only this locally-stored feed snapshot - it is never proof that the destination is safe.
+                                        </div>
+                                        {% for action in event["local_feed_actions"] %}
+                                        <div style="grid-column: 1 / -1; display:flex; align-items:center; gap:10px; flex-wrap: wrap;">
+                                            <strong>Source: {{ action["provider"] }}</strong>
+                                            {% if action["feed_status"] == "NEVER_LOADED" %}
+                                            <span class="badge badge-pending">Never loaded</span>
+                                            {% else %}
+                                                {% if action["match_status"] == "MATCH" %}
+                                                <span class="badge badge-critical">Match detected{% if action["indicator_type"] %} ({{ action["indicator_type"] }}){% endif %}</span>
+                                                {% else %}
+                                                <span class="badge badge-analyzed">No match</span>
+                                                {% endif %}
+                                                {% if action["feed_status"] == "STALE" %}
+                                                <span class="badge badge-medium" title="This feed snapshot is older than the freshness threshold - treat any match as historical, not a current/live result.">Feed: STALE</span>
+                                                {% else %}
+                                                <span style="color:#64748b; font-size:12px;">Feed: current</span>
+                                                {% endif %}
+                                                {% if action["feed_freshness"] %}
+                                                <span style="color:#64748b; font-size:12px;">feed updated {{ (action["feed_freshness"].get("feed_updated_at") or "-") | ltr }}, imported {{ (action["feed_freshness"].get("local_imported_at") or "-") | ltr }}</span>
+                                                {% endif %}
+                                            {% endif %}
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+
+                                    {% if event["ti_comparison"] %}
+                                    <div class="wm-details-grid" style="border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 10px;">
+                                        <div style="grid-column: 1 / -1;"><strong>Legacy vs. Multi-Source Threat Intelligence (Preview)</strong></div>
+                                        <div style="grid-column: 1 / -1; font-size: 13px; color: #94a3b8;">
+                                            Computed live for display only - does NOT change the Legacy risk_score/severity above and does NOT affect Alerts/Incidents/Response.
+                                        </div>
+                                        <div><strong>Legacy:</strong> {{ event["ti_comparison"].legacy_risk_score }}/100 ({{ event["ti_comparison"].legacy_severity }})</div>
+                                        <div><strong>Combined (preview):</strong> {{ event["ti_comparison"].shadow_combined_score }}/100 ({{ event["ti_comparison"].shadow_combined_severity }})</div>
+                                        <div><strong>Contribution:</strong> +{{ event["ti_comparison"].shadow_ti_points }}{% if event["ti_comparison"].decisive %} (decisive){% endif %}</div>
+                                        <div><strong>Severity would change:</strong> {{ "Yes" if event["ti_comparison"].severity_changed else "No" }}</div>
+                                        {% if event["ti_comparison"].reasons %}
+                                        <div style="grid-column: 1 / -1;">
+                                            <strong>Reasons:</strong>
+                                            <ul style="margin: 4px 0 0 18px; padding: 0;">
+                                                {% for reason in event["ti_comparison"].reasons %}
+                                                <li>{{ reason }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                        {% endif %}
+                                        {% if event["ti_shadow_record"] %}
+                                        <div style="grid-column: 1 / -1; font-size: 12px; color: #64748b; margin-top: 4px;">
+                                            Shadow Mode background record: first computed {{ event["ti_shadow_record"].first_evaluated_at }}{% if event["ti_shadow_record"].recompute_count %}, updated {{ event["ti_shadow_record"].recompute_count }} time(s) since (last: {{ event["ti_shadow_record"].evaluated_at }}, reason: {{ event["ti_shadow_record"].last_recompute_reason }}){% else %}, not yet updated since{% endif %}.
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+
+                                    {% set ti_stored = event["ti_evidence_multi"] | selectattr("lookup_status", "in", ["MATCH", "NO_MATCH", "ERROR", "RATE_LIMITED"]) | list %}
+
+                                    {% if ti_stored %}
+                                    <div class="wm-details-grid" style="border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 10px;">
+
+                                        <div style="grid-column: 1 / -1;"><strong>Threat Intelligence Evidence</strong></div>
+
+                                        <div style="grid-column: 1 / -1; overflow-x: auto;">
+                                        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                                            <thead>
+                                                <tr style="text-align: left; border-bottom: 1px solid #334155;">
+                                                    <th style="padding: 4px 8px;">Provider</th>
+                                                    <th style="padding: 4px 8px;">Indicator</th>
+                                                    <th style="padding: 4px 8px;">Status</th>
+                                                    <th style="padding: 4px 8px;">Classification</th>
+                                                    <th style="padding: 4px 8px;">Evidence</th>
+                                                    <th style="padding: 4px 8px;">Retrieved</th>
+                                                    <th style="padding: 4px 8px;">Expires</th>
+                                                    <th style="padding: 4px 8px;"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for evidence in event["ti_evidence_multi"] %}
+                                                {% if evidence.lookup_status in ["MATCH", "NO_MATCH", "ERROR", "RATE_LIMITED"] %}
+                                                <tr>
+                                                    <td style="padding: 4px 8px; text-transform: capitalize;">{{ evidence.provider }}</td>
+                                                    <td style="padding: 4px 8px;">{{ evidence.indicator_value }} <span style="color:#94a3b8;">({{ evidence.indicator_type }})</span></td>
+                                                    {% if evidence.lookup_status == "MATCH" %}
+                                                    <td style="padding: 4px 8px;">Match</td>
+                                                    <td style="padding: 4px 8px;">{{ evidence.classification or "-" }}</td>
+                                                    <td style="padding: 4px 8px;">{{ (evidence.summary if evidence.provider in ["virustotal", "cloudflare"] else (evidence.threat_type or evidence.malware_family or evidence.summary)) or "-" }}</td>
+                                                    <td style="padding: 4px 8px;">{{ evidence.retrieved_at or "-" }}</td>
+                                                    {% elif evidence.lookup_status == "NO_MATCH" %}
+                                                    <td style="padding: 4px 8px;">No match</td>
+                                                    <td style="padding: 4px 8px;">{{ evidence.classification or "-" }}</td>
+                                                    <td style="padding: 4px 8px;">{{ evidence.summary or "-" }}</td>
+                                                    <td style="padding: 4px 8px;">{{ evidence.retrieved_at or "-" }}</td>
+                                                    {% elif evidence.lookup_status == "RATE_LIMITED" %}
+                                                    <td style="padding: 4px 8px;">Rate limited</td>
+                                                    <td style="padding: 4px 8px;">{{ evidence.classification or "-" }}</td>
+                                                    <td style="padding: 4px 8px;">-</td>
+                                                    <td style="padding: 4px 8px;">-</td>
+                                                    {% else %}
+                                                    <td style="padding: 4px 8px;">Unavailable</td>
+                                                    <td style="padding: 4px 8px;">{{ evidence.classification or "-" }}</td>
+                                                    <td style="padding: 4px 8px;">-</td>
+                                                    <td style="padding: 4px 8px;">-</td>
+                                                    {% endif %}
+                                                    <td style="padding: 4px 8px;">{{ evidence.expires_at or "-" }}</td>
+                                                    <td style="padding: 4px 8px;">
+                                                        {% if session.get("role") == "admin" and evidence.lookup_status != "NOT_SUPPORTED" %}
+                                                        <form method="POST" action="/api/threat-intel/recheck" style="display:inline;">
+                                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                            <input type="hidden" name="provider" value="{{ evidence.provider }}">
+                                                            <input type="hidden" name="indicator_type" value="{{ evidence.indicator_type }}">
+                                                            <input type="hidden" name="indicator_value" value="{{ evidence.indicator_value }}">
+                                                            <input type="hidden" name="return_to" value="/web-monitoring">
+                                                            <button type="submit" style="font-size: 12px; padding: 2px 8px;">Re-check</button>
+                                                        </form>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endif %}
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                        </div>
+
+                                    </div>
+                                    {% endif %}
+
+                                    {% if event["ti_provider_status"] %}
+                                    <div class="wm-details-grid" style="border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 10px;">
+
+                                        <div style="grid-column: 1 / -1;"><strong>Threat Intelligence - Service Coverage</strong></div>
+                                        <div style="grid-column: 1 / -1; font-size: 13px; color: #94a3b8;">
+                                            Which services were selected for this event, which have completed, which are still queued, and which are not available right now - and why.
+                                        </div>
+
+                                        <div style="grid-column: 1 / -1; overflow-x: auto;">
+                                        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                                            <thead>
+                                                <tr style="text-align: left; border-bottom: 1px solid #334155;">
+                                                    <th style="padding: 4px 8px;">Provider</th>
+                                                    <th style="padding: 4px 8px;">Status</th>
+                                                    <th style="padding: 4px 8px;">Indicator</th>
+                                                    <th style="padding: 4px 8px;">Details</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for row in event["ti_provider_status"] %}
+                                                <tr>
+                                                    <td style="padding: 4px 8px; text-transform: capitalize;">{{ row.provider.replace("_", " ") }}</td>
+                                                    <td style="padding: 4px 8px;">
+                                                        {% if row.status == "COMPLETED" %}Completed
+                                                        {% elif row.status == "QUEUED" %}Queued
+                                                        {% elif row.status == "ELIGIBLE" %}Eligible (not yet scheduled)
+                                                        {% elif row.status == "PROCESSING" %}Processing
+                                                        {% elif row.status == "RATE_LIMITED" %}Rate Limited
+                                                        {% elif row.status == "FAILED" %}Failed
+                                                        {% elif row.status == "NOT_CONFIGURED" %}Not Configured
+                                                        {% elif row.status == "MANUAL_ONLY" %}Manual Only
+                                                        {% else %}Not Applicable{% endif %}
+                                                    </td>
+                                                    <td style="padding: 4px 8px;">{% if row.indicator_type %}{{ row.indicator_value }} <span style="color:#94a3b8;">({{ row.indicator_type }})</span>{% else %}-{% endif %}</td>
+                                                    <td style="padding: 4px 8px;">
+                                                        {% if row.status == "COMPLETED" and row.classification %}{{ row.classification }}
+                                                        {% else %}{{ row.reason or "-" }}{% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                        </div>
+
+                                    </div>
+                                    {% endif %}
+
+                                    {% if event["cf_actions"] %}
+                                    <div class="wm-details-grid" style="border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 10px;">
+
+                                        <div style="grid-column: 1 / -1;">
+                                            <strong>Cloudflare Intelligence (manual)</strong>
+                                            <span style="color:#94a3b8;">&mdash; context only; does not change Threat Risk or Priority.
+                                            {% if cf_budget %}Cloudflare application budget: {{ cf_budget["used"] }} / {{ cf_budget["budget"] }} used.{% endif %}</span>
+                                        </div>
+
+                                        {% for action in event["cf_actions"] %}
+                                        <div style="grid-column: 1 / -1;">
+                                            <span>{{ action["type"] }}: {{ action["value"] }}</span>
+                                            {% if action["state"] == "READY" and session.get("role") in ["admin", "analyst"] %}
+                                            <form method="POST" action="{{ url_for('cloudflare_investigate') }}" style="display:inline; margin-left:8px;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <input type="hidden" name="source" value="event">
+                                                <input type="hidden" name="record_id" value="{{ event['id'] }}">
+                                                <input type="hidden" name="indicator_type" value="{{ action['type'] }}">
+                                                <button type="submit" class="wm-copy-btn">Investigate with Cloudflare</button>
+                                            </form>
+                                            {% elif action["state"] == "CACHED" %}
+                                            <span style="color:#94a3b8; margin-left:8px;">Cloudflare evidence cached (see Threat Intelligence Evidence)</span>
+                                            {% elif action["state"] == "NOT_CONFIGURED" %}
+                                            <span style="color:#94a3b8; margin-left:8px;">Cloudflare not configured</span>
+                                            {% elif action["state"] == "BUDGET_EXHAUSTED" %}
+                                            <span style="color:#94a3b8; margin-left:8px;">Application budget exhausted</span>
+                                            {% elif action["state"] == "BACKOFF" %}
+                                            <span style="color:#94a3b8; margin-left:8px;">Paused after a rate-limit response</span>
+                                            {% elif action["state"] == "NOT_ELIGIBLE" %}
+                                            <span style="color:#94a3b8; margin-left:8px;">Not eligible</span>
+                                            {% endif %}
+                                        </div>
+                                        {% endfor %}
+
+                                    </div>
+                                    {% endif %}
+
+                                    <div class="wm-details-grid" style="border-bottom: 1px solid #334155; padding-bottom: 10px; margin-bottom: 10px;">
+
+                                        <div style="grid-column: 1 / -1;">
+                                            <strong>Investigation Priority:</strong>
+                                            {% if event["investigation_priority_level"] == "URGENT" %}
+                                            <span class="severity-critical">URGENT</span>
+                                            {% elif event["investigation_priority_level"] == "ELEVATED" %}
+                                            <span class="severity-high">ELEVATED</span>
+                                            {% elif event["investigation_priority_level"] == "REVIEW" %}
+                                            <span class="severity-low">REVIEW</span>
+                                            {% else %}
+                                            <span class="severity-info">ROUTINE</span>
+                                            {% endif %}
+                                        </div>
+
+                                        <div style="grid-column: 1 / -1;">
+                                            <strong>Reasons:</strong>
+                                            <ul style="margin: 4px 0 0 18px; padding: 0;">
+                                                {% for reason in event["investigation_priority_reasons"] %}
+                                                <li>{{ reason }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+
+                                    </div>
+
+                                    <div class="wm-details-grid">
+
+                                        <div><strong>Process PID:</strong> {{ event["process_pid"] or "-" }}</div>
+
+                                        <div><strong>Process Path:</strong> {{ event["process_path"] or "-" }}</div>
+
+                                        <div><strong>File Name:</strong> {{ event["file_name"] or "-" }}</div>
+
+                                        <div><strong>Extension:</strong> {{ event["file_extension"] or "-" }}</div>
+
+                                        <div>
+                                            <strong>Script-Related:</strong>
+                                            {% if event["is_script_related"] == 1 %}Yes
+                                            {% elif event["is_script_related"] == 0 %}No
+                                            {% else %}Unknown / not collected
+                                            {% endif %}
+                                        </div>
+
+                                        {% if event["sha256"] %}
+                                        <div class="wm-ip-cell">
+                                            <strong>SHA-256:</strong>
+                                            <span class="wm-ip-inline">
+                                                <span class="wm-ip-mono wm-ip-long" title="{{ event['sha256'] }}">{{ event["sha256"] }}</span>
+                                                <button type="button" class="wm-copy-btn" data-ip="{{ event['sha256'] }}" onclick="wmCopyIp(this)" title="Copy full SHA-256">&#10697;</button>
+                                            </span>
+                                        </div>
+                                        {% endif %}
+
+                                        {% if event["md5"] %}
+                                        <div class="wm-ip-cell">
+                                            <strong>MD5:</strong>
+                                            <span class="wm-ip-inline">
+                                                <span class="wm-ip-mono wm-ip-long" title="{{ event['md5'] }}">{{ event["md5"] }}</span>
+                                                <button type="button" class="wm-copy-btn" data-ip="{{ event['md5'] }}" onclick="wmCopyIp(this)" title="Copy full MD5">&#10697;</button>
+                                            </span>
+                                        </div>
+                                        {% endif %}
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+                            {% endif %}
+
+
+                        {% else %}
+
+
+                            <tr>
+
+
+                                <td colspan="14">
+
+                                    No web activity events match the current filters.
+
+                                </td>
+
+
+                            </tr>
+
+
+                        {% endfor %}
+
+
+                    </tbody>
+
+
+                </table>
+
+
+            </div>
+
+            {# Step 24A.4 Task 2: KEYSET pagination by event id. Every
+               currently active filter is preserved - only the cursor
+               changes. "Previous" uses after_id (and clears
+               before_id); "Next" uses before_id (and clears
+               after_id) - never both at once. Jinja comment (not an
+               HTML comment) so this explanatory text is stripped at
+               render time, not sent to the client where a naive
+               substring check (or a real user's browser search) could
+               confuse it for the actual link below. #}
+            <div class="wm-pagination" style="display:flex; gap:10px; align-items:center; margin-top:12px;">
+                {% if has_previous %}
+                <a href="{{ url_for('web_monitoring.web_monitoring', **dict(request.args, after_id=prev_cursor, before_id='')) }}" class="details-link">&larr; Previous</a>
+                {% endif %}
+                {% if has_next %}
+                <a href="{{ url_for('web_monitoring.web_monitoring', **dict(request.args, before_id=next_cursor, after_id='')) }}" class="details-link">Next &rarr;</a>
+                {% endif %}
+            </div>
+
+
+        </section>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Phase 11B: toggles the hidden per-row telemetry detail
+    // sub-row. Reads the target row id from the button's own
+    // data-target attribute (never inline-interpolated into JS).
+    function wmToggleDetails(button) {
+
+        var targetId = button.getAttribute("data-target");
+
+        var row = document.getElementById(targetId);
+
+        if (!row) {
+            return;
+        }
+
+        row.style.display = (row.style.display === "none") ? "table-row" : "none";
+    }
+
+    // Small, dependency-free "copy full IP address" helper for the
+    // Recent Web Events table. Uses the browser's native Clipboard
+    // API only - no external library. Reads the address from the
+    // button's own data-ip attribute (never inline-interpolated
+    // into JS) so it works safely for any IPv4/IPv6 value.
+    function wmCopyIp(button) {
+
+        var ip = button.getAttribute("data-ip");
+
+        if (!ip || !navigator.clipboard || !navigator.clipboard.writeText) {
+            return;
+        }
+
+        navigator.clipboard.writeText(ip).then(function () {
+
+            var original = button.innerHTML;
+
+            button.innerHTML = "&#10003;";
+
+            setTimeout(function () {
+                button.innerHTML = original;
+            }, 1200);
+        });
+    }
+</script>
+{% endblock %}

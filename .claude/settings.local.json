@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"./venv/Scripts/python.exe\" -m py_compile endpoint_agent_stable.py)",
+      "Bash(powershell -NoProfile -Command 'Get-CimInstance Win32_Process -Filter \"Name='\\\\''python.exe'\\\\'' AND CommandLine LIKE '\\\\''%web_event_worker%'\\\\''\" | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }; Start-Sleep -Milliseconds 300; Get-CimInstance Win32_Process -Filter \"Name='\\\\''python.exe'\\\\''\" | Select-Object ProcessId,CommandLine | Format-Table -AutoSize')",
+      "Bash(curl -s -o /dev/null -w \"Real server /login: %{http_code}\\\\n\" http://127.0.0.1:5000/login)"
+    ]
+  }
+}

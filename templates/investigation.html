@@ -1,0 +1,576 @@
+{% extends "base.html" %}
+
+{# Phase 12B.6B: READ-ONLY investigation hub for ONE web event.
+   - Labels live here (not in Python). No safe-filter or raw-markup output anywhere.
+   - Layout uses logical CSS properties / grid / flex only (RTL-friendly).
+   - Only sections that have data are rendered; no placeholder Suricata /
+     Zeek / Sigma panels. #}
+
+{% macro sev(value) -%}
+    {%- set v = (value or "")|lower -%}
+    {%- if v in ["critical", "high", "medium", "low", "info"] -%}
+        <span class="severity-{{ v }}">{{ value }}</span>
+    {%- else -%}
+        {{ value or "-" }}
+    {%- endif -%}
+{%- endmacro %}
+
+
+{% macro sample_table(items) -%}
+<div style="overflow-x: auto;">
+<table class="inv-table">
+    <thead><tr><th>Event</th><th>Server receipt time</th><th>Endpoint record</th><th>Process</th><th>Destination</th><th>Severity</th><th>Source</th></tr></thead>
+    <tbody>
+    {% for r in items %}
+        <tr>
+            <td><a href="{{ url_for('investigation_event', event_id=r.id) }}">#{{ r.id }}</a> <a href="{{ url_for('investigation_event', event_id=r.id) }}" class="inv-muted">Investigate</a></td>
+            <td class="inv-mono">{{ r.event_time }}</td>
+            <td class="inv-mono">{{ r.endpoint_ip }}{% if r.endpoint_uid %} <span class="inv-muted" title="stable agent identifier">[{{ r.endpoint_uid[:8] ~ "..." if r.endpoint_uid else "" }}]</span>{% else %} <span class="inv-muted">[historical / IP-only]</span>{% endif %}</td>
+            <td>{{ r.process_name or "-" }}</td>
+            <td class="inv-mono">{{ r.domain or r.resolved_ip or r.destination or "-" }}{% if r.attribution_code == "RDNS" %} <span class="inv-muted">(reverse-DNS inferred)</span>{% endif %}</td>
+            <td>{{ sev(r.severity) }}</td>
+            <td><span class="inv-badge inv-src-{{ r.source_code }}">{{ inv.source_labels[r.source_code] }}</span></td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+{%- endmacro %}
+
+{% block title %}Investigation - Event #{{ inv.header.event_id }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .inv-header-badges { display: flex; gap: 22px; flex-wrap: wrap; margin-block: 14px; }
+    .inv-badge-item { display: flex; flex-direction: column; gap: 4px; }
+    .inv-badge-label { font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em; }
+    .inv-grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+    .inv-grid-3 > .panel { margin: 0; }
+    .inv-kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; }
+    .inv-kv dt { color: #94a3b8; }
+    .inv-kv dd { margin: 0; overflow-wrap: anywhere; }
+    .inv-muted { color: #94a3b8; }
+    .inv-mono { font-family: Consolas, monospace; overflow-wrap: anywhere; }
+    .inv-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .inv-table th, .inv-table td { padding: 6px 10px; text-align: start; border-bottom: 1px solid #1e293b; vertical-align: top; }
+    .inv-table th { border-bottom: 1px solid #334155; }
+    .inv-badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11px; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; }
+    .inv-chip { display: inline-block; margin-inline-end: 8px; }
+    .inv-note { color: #94a3b8; font-size: 13px; margin-block: 6px; }
+    .inv-timeline { list-style: none; margin: 0; padding: 0; }
+    .inv-timeline li { display: grid; grid-template-columns: 150px 130px 1fr; gap: 10px; padding: 6px 0; border-bottom: 1px solid #1e293b; }
+    .inv-warn { border-inline-start: 3px solid #f59e0b; padding-inline-start: 10px; }
+    @media (max-width: 720px) { .inv-timeline li { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set h = inv.header %}
+{% set ev = inv.event %}
+
+<h1>Investigation &mdash; Event #{{ h.event_id }}</h1>
+<p class="subtitle">
+    Read-only investigation of one observed connection, assembled from currently stored data.
+    Opening this page performs no external lookup and changes nothing.
+</p>
+
+{% if cf_message %}
+<div class="notice notice-success">Cloudflare: {{ cf_message }}</div>
+{% endif %}
+
+<div class="panel">
+    <div class="inv-header-badges">
+        <div class="inv-badge-item"><span class="inv-badge-label">Server receipt time (local)</span><span>{{ h.event_time or "-" }}</span></div>
+        <div class="inv-badge-item"><span class="inv-badge-label">Endpoint record</span><span class="inv-mono">{{ h.endpoint_ip or "-" }}</span></div>
+        <div class="inv-badge-item"><span class="inv-badge-label">Process</span><span>{{ h.process_name or "-" }}</span></div>
+        <div class="inv-badge-item"><span class="inv-badge-label">Destination</span><span class="inv-mono">{{ h.destination or "-" }}</span></div>
+    </div>
+    <div class="inv-header-badges">
+        <div class="inv-badge-item"><span class="inv-badge-label">Threat Risk</span><span>{{ h.risk_score if h.risk_score is not none else "-" }}/100</span></div>
+        <div class="inv-badge-item"><span class="inv-badge-label">Severity</span><span>{{ sev(h.severity) }}</span></div>
+        <div class="inv-badge-item"><span class="inv-badge-label">Decision</span><span>{{ h.decision or "-" }}</span></div>
+        <div class="inv-badge-item">
+            <span class="inv-badge-label">Investigation Priority</span>
+            <span>
+                {% if h.priority_level == "URGENT" %}<span class="severity-critical">URGENT</span>
+                {% elif h.priority_level == "ELEVATED" %}<span class="severity-high">ELEVATED</span>
+                {% elif h.priority_level == "REVIEW" %}<span class="severity-low">REVIEW</span>
+                {% else %}<span class="severity-info">{{ h.priority_level or "ROUTINE" }}</span>{% endif %}
+            </span>
+        </div>
+        <div class="inv-badge-item">
+            <span class="inv-badge-label">Behavioral state</span>
+            <span>
+                {% if h.behavioral_state == "HISTORICAL_TRAINING" %}Historical baseline training data
+                {% else %}{{ h.behavioral_label or "-" }}{% endif %}
+            </span>
+        </div>
+    </div>
+    {% if h.priority_reasons %}
+    <ul class="inv-note" style="margin-inline-start: 18px; padding: 0;">
+        {% for reason in h.priority_reasons %}<li>{{ reason }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+</div>
+
+<div class="inv-grid-3">
+
+    <div class="panel">
+        <h2>Endpoint</h2>
+        {% set ep = inv.endpoint %}
+        {% if ep.record_found %}
+        <dl class="inv-kv">
+            <dt>Endpoint record</dt><dd class="inv-mono">{{ ep.ip_address }}</dd>
+            <dt>Hostname <span class="inv-muted">(latest known)</span></dt><dd>{{ ep.hostname or "-" }}</dd>
+            <dt>Last known OS user <span class="inv-muted">(latest known)</span></dt><dd>{{ ep.last_known_os_username or "-" }}</dd>
+            <dt>User observed on this event</dt><dd>{{ ev.os_username or "Not collected for this event" }}</dd>
+            <dt>Agent / source</dt><dd>{% if ep.is_managed_agent %}Managed endpoint agent (authenticated telemetry){% else %}Not a managed agent record ({{ ep.source or "unknown source" }}){% endif %}</dd>
+            <dt>Endpoint status</dt><dd>{{ ep.status or "-" }}</dd>
+            <dt>Last seen</dt><dd>{{ ep.last_seen or "-" }} <span class="inv-muted">({{ ep.presence }})</span></dd>
+        </dl>
+        {% else %}
+        <p class="inv-muted">No endpoint record exists for {{ ep.ip_address }}.</p>
+        <dl class="inv-kv"><dt>User observed on this event</dt><dd>{{ ev.os_username or "Not collected for this event" }}</dd></dl>
+        {% endif %}
+        {% set st = ep.stable %}
+        {% if st.available %}
+        <dl class="inv-kv" style="margin-block-start: 10px;">
+            <dt>Stable agent identifier</dt><dd class="inv-mono">{{ st.uid }}</dd>
+            <dt>Event-observed endpoint IP</dt><dd class="inv-mono">{{ ep.ip_address }}</dd>
+            <dt>Current / latest IP for this identifier</dt><dd class="inv-mono">{{ st.latest_ip or "-" }}{% if st.ip_records > 1 %} <span class="inv-muted">({{ st.ip_records }} IP-based endpoint records carry this identifier)</span>{% endif %}</dd>
+        </dl>
+        <p class="inv-note">The stable agent identifier labels one agent installation across restarts and address changes. It is identity metadata, not an authenticated device ID.</p>
+        {% else %}
+        <p class="inv-note inv-warn" style="margin-block-start: 10px;">Stable endpoint identity unavailable for this historical event.</p>
+        <p class="inv-note">An endpoint record is identified by its IP address; it is not a permanent device identity.</p>
+        {% endif %}
+    </div>
+
+    <div class="panel">
+        <h2>Process / File Context</h2>
+        {% set pr = inv.process %}
+        <dl class="inv-kv">
+            <dt>Process name</dt><dd>{{ pr.process_name or "-" }}</dd>
+            <dt>Process PID</dt><dd>{{ pr.process_pid if pr.process_pid is not none else "Not collected" }}</dd>
+            <dt>Process path</dt><dd class="inv-mono">{{ pr.process_path or "Not collected" }}</dd>
+            <dt>File name</dt><dd>{{ pr.file_name or "Not collected" }}</dd>
+            <dt>Extension</dt><dd>{{ pr.file_extension or "Not collected" }}</dd>
+            <dt>SHA-256</dt><dd class="inv-mono">{{ pr.sha256 or "Not collected" }}</dd>
+            <dt>MD5</dt><dd class="inv-mono">{{ pr.md5 or "Not collected" }}</dd>
+            <dt>Script-related</dt>
+            <dd>{% if pr.is_script_related == 1 %}Yes{% elif pr.is_script_related == 0 %}No{% else %}Unknown / not collected{% endif %}</dd>
+        </dl>
+        <p class="inv-note">Context for this observed connection; full process-tree telemetry is not available.</p>
+    </div>
+
+    <div class="panel">
+        <h2>Destination / Network Context</h2>
+        {% set d = inv.destination %}
+        <dl class="inv-kv">
+            <dt>Destination</dt><dd class="inv-mono">{{ d.destination or "-" }}</dd>
+            <dt>Domain</dt>
+            <dd>
+                {% if d.domain %}
+                    <span class="inv-mono">{{ d.domain }}</span>
+                    {% if d.attribution_code == "DNS" %}<span class="inv-badge">DNS-attributed</span>
+                    {% elif d.attribution_code == "RDNS" %}<span class="inv-badge">Reverse-DNS inferred</span>
+                    {% endif %}
+                {% else %}No hostname associated{% endif %}
+            </dd>
+            <dt>Resolved IP</dt><dd class="inv-mono">{{ d.resolved_ip or "-" }}</dd>
+            <dt>Observed IP</dt><dd class="inv-mono">{{ d.observed_ip or "-" }}</dd>
+            <dt>Attribution</dt>
+            <dd>
+                {% if d.attribution_code == "DNS" %}DNS attribution (a forward DNS query observed on the endpoint)
+                {% elif d.attribution_code == "RDNS" %}Reverse-DNS attribution: an inferred hostname for the destination IP, not a confirmed requested domain
+                {% elif d.attribution_code == "IP" %}IP-only attribution (no hostname)
+                {% else %}Unknown (not recorded){% endif %}
+            </dd>
+            <dt>Event source</dt><dd>{{ d.source or "unspecified (legacy)" }}</dd>
+            <dt>Destination port</dt>
+            <dd>{% if d.port is not none %}<span class="inv-mono">{{ d.port }}</span>{% else %}<span class="inv-muted">Not observed</span>{% endif %}</dd>
+            <dt>Transport protocol</dt>
+            <dd>{% if d.protocol %}<span class="inv-mono">{{ d.protocol|upper }}</span> <span class="inv-muted">(transport layer only, not an application protocol)</span>{% else %}<span class="inv-muted">Not observed</span>{% endif %}</dd>
+            <dt>Event-observed source IP</dt>
+            <dd>{% if d.source_ip %}<span class="inv-mono">{{ d.source_ip }}</span> <span class="inv-muted">(the connection's local address as reported by the OS)</span>{% else %}<span class="inv-muted">Not observed</span>{% endif %}</dd>
+        </dl>
+        <p class="inv-note">Observed endpoint connection metadata from the operating system, not a packet capture. Port, protocol and source IP are empty for events recorded before this data was collected or when the OS did not report them.</p>
+    </div>
+
+</div>
+
+{% set ni = inv.network_identity %}
+<div class="panel">
+    <h2>Endpoint Network Identity</h2>
+    {% if ni.available %}
+    <p class="inv-note">Each row means: this stable agent installation was observed using this IP during the interval shown (UTC). It does not mean the IP permanently belongs to it &mdash; addresses are reassigned over time.</p>
+    <dl class="inv-kv">
+        <dt>Event-observed endpoint IP</dt><dd class="inv-mono">{{ ev.endpoint_ip }}</dd>
+        <dt>Latest observation</dt>
+        <dd>{% if ni.latest %}<span class="inv-mono">{{ ni.latest.ip_address }}</span> <span class="inv-muted">(last seen {{ ni.latest.last_seen_at }} UTC)</span>{% else %}<span class="inv-muted">No IP history recorded yet for this identifier.</span>{% endif %}</dd>
+    </dl>
+    {% if ni.rows %}
+    <table class="inv-table">
+        <thead><tr><th>IP address</th><th>First seen (UTC)</th><th>Last seen (UTC)</th><th>Observations</th><th>Basis</th><th></th></tr></thead>
+        <tbody>
+        {% for r in ni.rows %}
+            <tr>
+                <td class="inv-mono">{{ r.ip_address }}</td>
+                <td class="inv-mono">{{ r.first_seen_at }}</td>
+                <td class="inv-mono">{{ r.last_seen_at }}</td>
+                <td>{{ r.observation_count }}</td>
+                <td>{{ "Heartbeat" if r.source == "agent-heartbeat" else "Web event" }}</td>
+                <td>{% if loop.first %}<span class="inv-badge">Latest observation</span>{% else %}<span class="inv-muted">Historical</span>{% endif %}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% if ni.truncated %}<p class="inv-note">Showing the 20 most recent intervals.</p>{% endif %}
+    {% endif %}
+    {% else %}
+    <p class="inv-note inv-warn">Not available: this event carries no stable agent identifier, so no IP history can be tied to it. The event-observed endpoint IP ({{ ev.endpoint_ip }}) is an IP-based record, not a permanent device identity.</p>
+    {% endif %}
+</div>
+
+<div class="panel">
+    <h2>Detections &amp; Security Signals</h2>
+    {% set det = inv.detections %}
+    <dl class="inv-kv">
+        <dt>Threat Risk</dt><dd>{{ det.risk_score if det.risk_score is not none else "-" }}/100</dd>
+        <dt>Severity</dt><dd>{{ sev(det.severity) }}</dd>
+        <dt>Decision</dt><dd>{{ det.decision or "-" }}</dd>
+    </dl>
+    {% if det["items"] %}
+    <table class="inv-table" style="margin-block-start: 10px;">
+        <thead><tr><th>Source</th><th>Analysis detail (as recorded at analysis time)</th></tr></thead>
+        <tbody>
+        {% for item in det["items"] %}
+            <tr>
+                <td><span class="inv-badge inv-src-{{ item.source }}">{{ inv.source_labels[item.source] }}</span></td>
+                <td>{{ item.text }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="inv-muted" style="margin-block-start: 10px;">No analysis details were recorded for this event.</p>
+    {% endif %}
+    <p class="inv-note">Threat Risk is the existing platform score and is shown unchanged. It is independent of Behavioral Analysis and of provider evidence.</p>
+</div>
+
+<div class="panel">
+    <h2>Current Threat Intelligence</h2>
+    {% set ti = inv.threat_intelligence %}
+    <p class="inv-note">Provider evidence reflects the latest stored lookup for the indicator and may have been retrieved after this event occurred. A match means the indicator is listed by that source; it does not by itself prove the endpoint is compromised.</p>
+    {% include "_investigation_ti_table.html" %}
+    {% if ti.counts.configured_providers %}
+    <p class="inv-note">
+        Providers with stored answers: {{ ti.counts.configured_providers }} &middot;
+        reporting a direct threat category or listing: {{ ti.counts.security_signal_providers }} &middot;
+        no match: {{ ti.counts.no_match_providers }} &middot;
+        unavailable: {{ ti.counts.unavailable_providers }}
+    </p>
+    {% endif %}
+
+    {% set cfx = inv.cloudflare %}
+    <h3 style="margin-block-start: 16px;">Cloudflare (manual)</h3>
+    {% if cfx.available and cfx.actions %}
+        <p class="inv-note">Cloudflare is queried only on request. Application budget: {{ cfx.budget.used }} / {{ cfx.budget.budget }} used.</p>
+        {% for action in cfx.actions %}
+        <div style="margin-block: 6px;">
+            <span>{{ action.type }}: <span class="inv-mono">{{ action.value }}</span></span>
+            {% if action.state == "READY" and session.get("role") in ["admin", "analyst"] %}
+            <span class="inv-muted"> &mdash; no stored Cloudflare investigation</span>
+            <form method="POST" action="{{ url_for('cloudflare_investigate') }}" style="display: inline; margin-inline-start: 8px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="source" value="event">
+                <input type="hidden" name="record_id" value="{{ h.event_id }}">
+                <input type="hidden" name="indicator_type" value="{{ action.type }}">
+                <button type="submit" class="wm-copy-btn">Investigate with Cloudflare</button>
+            </form>
+            {% elif action.state == "CACHED" %}<span class="inv-muted"> &mdash; stored Cloudflare evidence is shown above</span>
+            {% elif action.state == "NOT_CONFIGURED" %}<span class="inv-muted"> &mdash; no stored Cloudflare investigation; Cloudflare is not configured</span>
+            {% elif action.state == "BUDGET_EXHAUSTED" %}<span class="inv-muted"> &mdash; no stored Cloudflare investigation; application budget exhausted</span>
+            {% elif action.state == "BACKOFF" %}<span class="inv-muted"> &mdash; no stored Cloudflare investigation; paused after a rate-limit response</span>
+            {% else %}<span class="inv-muted"> &mdash; not eligible for Cloudflare</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <p class="inv-muted">No Cloudflare-eligible indicator (public IP or domain) for this event.</p>
+    {% endif %}
+</div>
+
+<div class="panel">
+    <h2>Behavioral Analysis</h2>
+    {% set b = inv.behavioral %}
+    {% if b.state == "HISTORICAL_TRAINING" %}
+        <p>Historical baseline training data</p>
+        <p class="inv-note">This event has no behavioral result: it predates behavioral scoring and was used only to build the endpoint baseline.</p>
+    {% else %}
+        <dl class="inv-kv">
+            <dt>Evaluation status</dt><dd>{{ b.row.evaluation_status }}</dd>
+            <dt>Anomaly score</dt>
+            <dd>{% if b.state == "SCORED" %}{{ b.row.anomaly_score }}/100{% else %}Not scored{% endif %}</dd>
+            <dt>Display label</dt><dd>{{ b.label }}</dd>
+            <dt>Maturity</dt><dd>{{ b.row.maturity_state_at_evaluation or "-" }}</dd>
+            <dt>Confidence</dt><dd>{{ b.row.confidence or "-" }}</dd>
+            <dt>Temporal baseline</dt><dd>{{ b.row.temporal_status or "-" }}</dd>
+        </dl>
+        {% if b.state == "NOT_SCORED" %}<p class="inv-note">This event was not scored (for example it arrived later than the endpoint's newest incorporated event).</p>{% endif %}
+        {% if b.reasons %}
+        <ul style="margin-inline-start: 18px; padding: 0;">{% for r in b.reasons %}<li>{{ r }}</li>{% endfor %}</ul>
+        {% endif %}
+    {% endif %}
+    <p class="inv-note">Behavioral pattern, not a maliciousness verdict. It is independent of Threat Risk.</p>
+</div>
+
+<div class="panel">
+    <h2>Timeline</h2>
+    <p class="inv-note">Each entry uses its own timestamp: the event time is server receipt time; provider entries show when the evidence was retrieved.</p>
+    {% set titles = {
+        "web_event_observed": "Web event observed",
+        "analysis_completed": "Analysis completed",
+        "behavioral_evaluated": "Behavioral evaluation computed",
+        "provider_evidence_retrieved": "Provider evidence retrieved",
+        "alert_created": "Alert created",
+        "alert_updated": "Alert last updated",
+        "incident_created": "Incident recorded",
+        "response_requested": "Response requested",
+        "response_executed": "Response executed"
+    } %}
+    <ol class="inv-timeline">
+    {% for item in inv.timeline %}
+        <li>
+            <span class="inv-mono">{{ item.timestamp or "time unknown" }}</span>
+            <span><span class="inv-badge inv-src-{{ item.source }}">{{ inv.source_labels[item.source] }}</span></span>
+            <span>
+                {{ titles.get(item.title, item.title) }}
+                {% if item.note == "server_receipt_time" %}<span class="inv-muted">(server receipt time)</span>
+                {% elif item.kind == "THREAT_INTEL" %}<span class="inv-muted">({{ item.note }}: {{ item.source_id }})</span>
+                {% elif item.source_type in ["alert", "alert_update"] %}
+                    <a href="{{ url_for('alert_details', alert_id=item.source_id) }}">Alert #{{ item.source_id }}</a>
+                {% elif item.source_type == "incident" %}
+                    <a href="{{ url_for('incident_details', event_id=item.source_id) }}">Incident #{{ item.source_id }}</a>
+                {% elif item.source_type in ["response_command", "response_command_exec"] %}
+                    <span class="inv-muted">(command #{{ item.source_id }}, {{ item.note }})</span>
+                {% endif %}
+            </span>
+        </li>
+    {% endfor %}
+    </ol>
+</div>
+
+{% set ra = inv.related_activity %}
+{% set reason_text = {
+    "NO_SHA256": "No SHA-256 was collected for this event.",
+    "SHA256_PRESENT": "Not used: this event has a SHA-256, the stronger file identifier.",
+    "NO_MD5": "No MD5 was collected for this event.",
+    "NO_DOMAIN": "No hostname is associated with this event.",
+    "RDNS_INFERRED": "Not used: the hostname is reverse-DNS inferred, not a confirmed requested domain.",
+    "IP_ONLY": "Not used: this event is IP-only (no hostname).",
+    "ATTRIBUTION_UNKNOWN": "Not used: how the hostname was attributed is not recorded.",
+    "DOMAIN_NOT_ELIGIBLE": "Not used: the hostname is not an eligible public domain.",
+    "NO_IP": "No destination IP is recorded for this event.",
+    "IP_NOT_PUBLIC_OR_NOT_CANONICAL": "Not used: the destination is a private, local or non-canonical address.",
+    "NO_PROCESS": "No process name is recorded for this event.",
+    "NO_EVENT_USER": "No OS user was observed on this event.",
+    "TIME_UNAVAILABLE": "Unavailable: this event's time could not be read."
+} %}
+{% set caveat = "Endpoint records are currently IP-based and may represent the same physical device across address changes." %}
+
+<div class="panel">
+    <h2>Observed Elsewhere</h2>
+    <p class="inv-note">Where else the same file, confirmed domain or destination IP appears in stored events, within a bounded time window. This is investigation context, not correlation: it does not show the events are the same attack, and it is not a compromise or infection count.</p>
+    {% if ra.observed_elsewhere %}
+    <table class="inv-table">
+        <thead><tr><th>Identifier</th><th>Evidence strength</th><th>Events</th><th>Endpoint records</th><th>First observed</th><th>Last observed</th><th>Window</th></tr></thead>
+        <tbody>
+        {% for e in ra.observed_elsewhere %}
+            <tr>
+                <td>
+                    {% if e.kind == "FILE_SHA256" %}File (SHA-256)
+                    {% elif e.kind == "FILE_MD5" %}File (MD5 &mdash; a weaker file identifier than SHA-256)
+                    {% elif e.kind == "DOMAIN" %}Confirmed DNS-attributed domain
+                    {% else %}Destination IP{% endif %}
+                    <div class="inv-mono inv-muted">{{ e.identifier }}</div>
+                </td>
+                <td>
+                    {% if e.strength == "STRONG" %}Strong identifier
+                    {% elif e.strength == "WEAKER_FILE_IDENTIFIER" %}Weaker file identifier
+                    {% else %}Supporting context{% endif %}
+                </td>
+                <td>{{ e.total_events }} <span class="inv-muted">(including this event)</span></td>
+                <td>
+                    {% if e.stable_endpoints %}
+                        {% if e.kind == "DOMAIN" %}Confirmed DNS-attributed domain seen with{% else %}Seen with{% endif %}
+                        <div>Stable endpoint identifiers: {{ e.stable_endpoints }}{% if e.endpoint_records_capped %}+{% endif %} <span class="inv-muted">({{ e.other_stable_endpoints }} other than this event's)</span></div>
+                        <div>Historical / IP-only records: {{ e.historical_records }}</div>
+                        <div class="inv-muted">Reported separately, not summed: historical records carry no stable identifier and cannot be tied to one.</div>
+                    {% else %}
+                        {% if e.kind == "DOMAIN" %}Confirmed DNS-attributed domain observed on {{ e.endpoint_records }}{% if e.endpoint_records_capped %}+{% endif %} endpoint record{{ "" if e.endpoint_records == 1 else "s" }}
+                        {% else %}Observed on {{ e.endpoint_records }}{% if e.endpoint_records_capped %}+{% endif %} endpoint record{{ "" if e.endpoint_records == 1 else "s" }}{% endif %}
+                        <span class="inv-muted">({{ e.other_endpoint_records }} other than this record)</span>
+                        <div class="inv-muted">IP-based endpoint records only (no stable identifiers in this result).</div>
+                    {% endif %}
+                </td>
+                <td class="inv-mono">{{ e.first_observed or "-" }}</td>
+                <td class="inv-mono">{{ e.last_observed or "-" }}</td>
+                <td>&plusmn;{{ (e.window_minutes // 60) if e.window_minutes >= 60 else e.window_minutes }} {{ "hour" if e.window_minutes >= 60 else "minutes" }}{{ "s" if e.window_minutes >= 120 else "" }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% if ra.observed_elsewhere | selectattr("kind", "equalto", "DESTINATION_IP") | list %}
+    <p class="inv-note">Shared destination IP is supporting context and does not by itself establish that events are related (CDNs, shared hosting and cloud infrastructure reuse addresses).</p>
+    {% endif %}
+    {% else %}
+    <p class="inv-muted">No SHA-256/MD5, confirmed DNS-attributed domain or public destination IP is available for this event.</p>
+    {% endif %}
+    {% for key in ["same_sha256", "same_md5", "same_domain", "same_destination_ip"] %}
+        {% if not ra[key].applicable and ra[key].reason not in ["SHA256_PRESENT", "NO_SHA256", "NO_MD5"] %}
+        <p class="inv-note">{{ {"same_domain": "Domain", "same_destination_ip": "Destination IP"}.get(key, "File") }}: {{ reason_text[ra[key].reason] }}</p>
+        {% endif %}
+    {% endfor %}
+    <p class="inv-note inv-warn">{{ caveat }}</p>
+</div>
+
+<div class="panel">
+    <h2>Related Activity</h2>
+    <p class="inv-note">Bounded time-window context (nearest events first, small samples). This is not a correlation. No threat intelligence or behavioral analysis is loaded for these events &mdash; use Investigate on a row for that.</p>
+
+    {% set se = ra.same_endpoint %}
+    <details style="margin-block: 8px;">
+        <summary>{% if se.identity_basis == "STABLE_UID" %}Same stable endpoint (agent identifier)
+            {% else %}Same endpoint record (IP-based endpoint record){% endif %} (&plusmn;{{ se.window_minutes }} minutes) &mdash;
+            {% if se.unavailable %}unavailable{% else %}{{ se["items"]|length }} shown{% if se.truncated %} (more exist; capped at 50){% endif %}{% endif %}</summary>
+        {% if se.unavailable %}<p class="inv-muted">{{ reason_text["TIME_UNAVAILABLE"] }}</p>
+        {% elif se["items"] %}{{ sample_table(se["items"]) }}
+        {% else %}<p class="inv-muted">No other events from this {{ "stable endpoint" if se.identity_basis == "STABLE_UID" else "endpoint record" }} within the window.</p>{% endif %}
+        {% if se.identity_basis == "STABLE_UID" %}<p class="inv-note">Matched on the stable agent identifier only. Historical events without an identifier are not included.</p>
+        {% else %}<p class="inv-note">This event has no stable identifier, so the IP-based endpoint record is used.</p>{% endif %}
+    </details>
+
+    {% for key, label in [("same_sha256", "Same file (SHA-256)"), ("same_md5", "Same file (MD5, weaker file identifier)"), ("same_domain", "Same confirmed DNS-attributed domain"), ("same_destination_ip", "Same destination IP"), ("same_process", "Same process on this " ~ ("stable endpoint" if ra.same_endpoint.identity_basis == "STABLE_UID" else "endpoint record")), ("same_user", "Same user observed on events, on this " ~ ("stable endpoint" if ra.same_endpoint.identity_basis == "STABLE_UID" else "endpoint record"))] %}
+        {% set cat = ra[key] %}
+        {% if cat.applicable %}
+        <details style="margin-block: 8px;">
+            <summary>{{ label }} &mdash; {{ cat.total_events - 1 }} other event{{ "" if cat.total_events - 1 == 1 else "s" }} within &plusmn;{{ (cat.window_minutes // 60) if cat.window_minutes >= 60 else cat.window_minutes }} {{ "hour" if cat.window_minutes >= 60 else "minutes" }}{{ "s" if cat.window_minutes >= 120 else "" }}{% if cat.cross_endpoint %}{% if cat.stable_endpoints %}, stable endpoint identifiers: {{ cat.stable_endpoints }}, historical / IP-only records: {{ cat.historical_records }}{% else %}, {{ cat.endpoint_records }}{% if cat.endpoint_records_capped %}+{% endif %} endpoint record{{ "" if cat.endpoint_records == 1 else "s" }}{% endif %}{% endif %}</summary>
+            <p class="inv-note">
+                <span class="inv-mono">{{ cat.identifier }}</span>
+                &middot;
+                {% if cat.strength == "STRONG" %}strong identifier{% elif cat.strength == "WEAKER_FILE_IDENTIFIER" %}weaker file identifier{% else %}supporting context{% endif %}
+                {% if cat.first_observed %}&middot; first observed {{ cat.first_observed }}, last observed {{ cat.last_observed }}{% endif %}
+            </p>
+            {% if cat.cross_endpoint and cat.endpoint_breakdown %}
+            <p class="inv-note">{% if cat.stable_endpoints %}Endpoint identities (stable identifier @ IP, or historical / IP-only):{% else %}Endpoint records:{% endif %}
+                {% for b in cat.endpoint_breakdown %}<span class="inv-chip inv-mono">{% if b.endpoint_uid %}{{ b.endpoint_uid[:8] }}... @ {{ b.endpoint_ip }}{% else %}{{ b.endpoint_ip }} (historical / IP-only){% endif %}{% if b.is_this_record %} (this event's){% endif %}: {{ b.events }}</span>{% endfor %}
+                {% if cat.breakdown_more %}<span class="inv-muted">+{{ cat.breakdown_more }} more</span>{% endif %}
+            </p>
+            <p class="inv-note inv-warn">{{ caveat }}</p>
+            {% endif %}
+            {% if key == "same_destination_ip" %}<p class="inv-note">Shared destination IP is supporting context and does not by itself establish that events are related.</p>{% endif %}
+            {% if cat.sample %}
+                {{ sample_table(cat.sample) }}
+                {% if cat.sample_truncated %}<p class="inv-note">Showing the {{ cat.sample|length }} nearest of {{ cat.total_events - 1 }} other matching events.</p>{% endif %}
+            {% else %}
+                <p class="inv-muted">No other matching events in the window.</p>
+            {% endif %}
+        </details>
+        {% else %}
+        <p class="inv-note" style="margin-block: 6px;">{{ label }}: {{ reason_text[cat.reason] }}</p>
+        {% endif %}
+    {% endfor %}
+</div>
+
+<div class="panel">
+    <h2>Alert / Incident / Response Context</h2>
+
+    <h3>Alerts</h3>
+    {% if inv.alerts %}
+    <table class="inv-table">
+        <thead><tr><th>Alert</th><th>Type</th><th>Severity</th><th>Status</th><th>Created</th><th>Updated</th><th>Latest referenced event</th><th>Incident</th><th>Association</th></tr></thead>
+        <tbody>
+        {% for a in inv.alerts %}
+            <tr>
+                <td><a href="{{ url_for('alert_details', alert_id=a.id) }}">#{{ a.id }}</a></td>
+                <td>{{ a.alert_type }}</td>
+                <td>{{ sev(a.severity) }}</td>
+                <td>{{ a.status }}</td>
+                <td class="inv-mono">{{ a.created_at }}</td>
+                <td class="inv-mono">{{ a.updated_at or "-" }}</td>
+                <td>{% if a.source_event_id %}<a href="{{ url_for('investigation_event', event_id=a.source_event_id) }}">#{{ a.source_event_id }}</a>{% else %}-{% endif %}</td>
+                <td>{% if a.incident_id %}<a href="{{ url_for('incident_details', event_id=a.incident_id) }}">#{{ a.incident_id }}</a>{% else %}-{% endif %}</td>
+                <td>
+                    {% if a.relation == "CREATED_FROM" %}Created from this event
+                    {% elif a.relation == "DEDUP_REFRESH" %}Dedup refresh (this event matched the existing alert)
+                    {% elif a.relation == "LEGACY_LATEST_REFERENCE" %}Legacy latest reference
+                    {% elif a.relation == "LEGACY_TEXT_ASSOCIATION" %}Legacy text association (derived from historical event text)
+                    {% else %}{{ a.relation }}{% endif %}
+                    {% if a.is_latest_reference %}<div class="inv-muted">This event is currently the alert's latest referenced event.</div>{% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <p class="inv-note">An alert's referenced event is the most recent event that matched it; earlier events for the same alert are not kept as separate links.</p>
+    {% else %}
+    <p class="inv-muted">No alert is associated with this event.</p>
+    {% endif %}
+
+    <h3 style="margin-block-start: 16px;">Incident</h3>
+    {% if inv.incident %}
+        {% set inc = inv.incident %}
+        <dl class="inv-kv">
+            <dt>Incident</dt><dd><a href="{{ url_for('incident_details', event_id=inc.id) }}">#{{ inc.id }}</a> <span class="inv-muted">(via alert #{{ inc.via_alert_id }})</span></dd>
+            <dt>Event type</dt><dd>{{ inc.event_type }}</dd>
+            <dt>Severity</dt><dd>{{ sev(inc.severity) }}</dd>
+            <dt>Status</dt><dd>{{ inc.status }}</dd>
+            <dt>Recorded</dt><dd class="inv-mono">{{ inc.event_time }}</dd>
+            <dt>Updated</dt><dd class="inv-mono">{{ inc.updated_at or "-" }}</dd>
+        </dl>
+    {% else %}
+        <p class="inv-muted">No incident is linked to this event's alerts.</p>
+    {% endif %}
+
+    <h3 style="margin-block-start: 16px;">Response</h3>
+    {% if inv.response %}
+    <table class="inv-table">
+        <thead><tr><th>Command</th><th>Type</th><th>Target</th><th>Status</th><th>Mode</th><th>Requested</th><th>Executed</th></tr></thead>
+        <tbody>
+        {% for c in inv.response %}
+            <tr>
+                <td>#{{ c.id }}</td><td>{{ c.command_type }}</td><td class="inv-mono">{{ c.target or "-" }}</td>
+                <td>{{ c.status }}</td><td>{{ c.mode or "-" }}</td>
+                <td class="inv-mono">{{ c.created_at }}</td><td class="inv-mono">{{ c.executed_at or "-" }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="inv-muted">No response actions recorded for this investigation.</p>
+    {% endif %}
+    <p class="inv-note"><a href="{{ url_for('response_actions') }}">Open Response Actions</a></p>
+</div>
+
+<div class="panel">
+    <h2>Limitations of this view</h2>
+    {% set lim = {
+        "server_receipt_time": "Event time is the server's receipt time; the agent does not send its own timestamp.",
+        "endpoint_record_not_device": "An endpoint record is identified by IP address and is not a permanent device identity; two records can be the same machine.",
+        "latest_reference_fields": "Hostname and last-known user are the endpoint's latest values, not values at the time of this event.",
+        "current_ti_not_point_in_time": "Threat intelligence is the latest stored lookup, not what was known when the event occurred.",
+        "alert_reference_is_latest_event": "An alert points to its latest referenced event, not necessarily the first event that triggered it.",
+        "port_protocol_not_collected": "Destination port and transport protocol were not observed for this event (not collected before Phase 13C, or unavailable for this connection).",
+        "no_process_tree": "No parent process, command line or process tree is available.",
+        "behavioral_partial_coverage": "Behavioral results exist only for events evaluated after the baseline was established.",
+        "related_activity_is_time_window_context": "Related Activity and Observed Elsewhere are bounded time-window context, not correlation: they do not show that events belong to the same attack.",
+        "endpoint_records_are_ip_based": "Counts are of endpoint records, which are currently IP-based and may represent the same physical device across address changes."
+    } %}
+    <ul style="margin-inline-start: 18px; padding: 0;">
+        {% for code in inv.limitations %}<li class="inv-note">{{ lim[code] }}</li>{% endfor %}
+    </ul>
+</div>
+
+<p><a href="{{ url_for('web_monitoring.web_monitoring') }}">&larr; Back to Web / Endpoint Monitoring</a></p>
+{% endblock %}

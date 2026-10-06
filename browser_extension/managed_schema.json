@@ -1,0 +1,16 @@
+{
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "title": "Collect browser navigation events",
+      "description": "Master on/off switch for this extension, settable centrally via Chrome/Edge enterprise policy. Defaults to true if unset."
+    },
+    "excludedDomains": {
+      "type": "array",
+      "items": { "type": "string" },
+      "title": "Excluded domains",
+      "description": "Hostnames (and their subdomains) that are NEVER reported, e.g. banking or healthcare sites, per organizational privacy policy. Example: [\"mybank.example\", \"healthportal.example\"]."
+    }
+  }
+}

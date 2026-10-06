@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Organization Blocklist{% endblock %}
+
+{% block content %}
+
+<h1>Organization Blocklist</h1>
+
+<p class="subtitle">
+    Fan out a BLOCK_DESTINATION request to some or all managed endpoints for
+    a single IPv4/IPv6 target. Reuses the existing Alert/Incident Response
+    Actions architecture - no new command types, no new firewall logic.
+</p>
+
+<div class="cards">
+    <div class="card">
+        <h3>Active Global Policies</h3>
+        <p class="number">{{ active_policy_count }}</p>
+    </div>
+    <div class="card">
+        <h3>Endpoints Covered</h3>
+        <p class="number">{{ total_endpoints_covered }}</p>
+    </div>
+    <div class="card">
+        <h3>Pending Deployments</h3>
+        <p class="number">{{ total_pending }}</p>
+    </div>
+    <div class="card">
+        <h3>Failed Deployments</h3>
+        <p class="number">{{ total_failed }}</p>
+    </div>
+</div>
+
+<div class="panel">
+
+    <h2>Global Block Policies</h2>
+
+    {% if session.get("role") == "admin" %}
+    <a href="{{ url_for('organization_blocklist_new') }}" class="details-link">+ New Global Block</a>
+    {% endif %}
+
+    {% if policy_rows %}
+
+    <div style="overflow-x: auto;">
+    <table>
+        <tr>
+            <th>Target</th>
+            <th>Type</th>
+            <th>Scope</th>
+            <th>Requested Mode</th>
+            <th>Requested By</th>
+            <th>Created</th>
+            <th>Coverage</th>
+            <th>Pending</th>
+            <th>Failed</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+        {% for row in policy_rows %}
+        {% set policy = row.policy %}
+        {% set coverage = row.coverage %}
+        <tr>
+            <td class="wm-ip-cell">
+                <span class="wm-ip-inline">
+                    <span class="wm-ip-mono{% if policy.target_value|length > 15 %} wm-ip-long{% endif %}" title="{{ policy.target_value }}">{{ policy.target_value }}</span>
+                    <button type="button" class="wm-copy-btn" data-ip="{{ policy.target_value }}" onclick="wmCopyIp(this)" title="Copy IP address">Copy</button>
+                </span>
+            </td>
+            <td>{{ policy.target_type }}</td>
+            <td>{{ policy.scope }}</td>
+            <td>{{ policy.requested_mode }}</td>
+            <td>{{ policy.requested_by }}</td>
+            <td>{{ policy.created_at }}</td>
+            <td>{{ coverage.success }} / {{ coverage.total }}</td>
+            <td>{{ coverage.pending }}</td>
+            <td>{{ coverage.failed }}</td>
+            <td>
+                {% if policy.active == 1 %}
+                <span class="status-open">ACTIVE</span>
+                {% else %}
+                <span class="status-closed">DISABLED</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="{{ url_for('organization_blocklist_details', policy_id=policy.id) }}" class="details-link">View</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    </div>
+
+    {% else %}
+
+    <p>No Global Block Policies have been created yet.</p>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function wmCopyIp(button) {
+    var ip = button.getAttribute("data-ip");
+    if (!ip || !navigator.clipboard || !navigator.clipboard.writeText) {
+        return;
+    }
+    navigator.clipboard.writeText(ip).then(function () {
+        var original = button.innerHTML;
+        button.innerHTML = "&#10003;";
+        setTimeout(function () {
+            button.innerHTML = original;
+        }, 1200);
+    });
+}
+</script>
+{% endblock %}

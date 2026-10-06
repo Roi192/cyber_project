@@ -1,0 +1,874 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _("Alert #%(id)s", id=alert.id) }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .alert-summary-badges {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin: 14px 0;
+    }
+    .alert-summary-badges .badge-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .alert-summary-badges .badge-label {
+        font-size: 11px;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    .alert-relationship {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        margin: 18px 0;
+        padding: 16px;
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 10px;
+    }
+    .alert-relationship .arrow {
+        color: #64748b;
+        font-size: 20px;
+    }
+    /* .alert-meta-line and .help-tip are now defined globally in
+       static/style.css (reused by Incident Details and
+       Organization Blocklist too). */
+    .response-action-cards {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+    .response-action-cards .action-card {
+        flex: 1 1 280px;
+    }
+    .action-card-isolate button,
+    .action-card-isolate .delete-button {
+        margin-top: 15px;
+    }
+    .evidence-card {
+        background: #111827;
+        border: 1px solid #334155;
+        border-radius: 10px;
+        padding: 14px 18px;
+        margin-top: 12px;
+    }
+    .evidence-card table {
+        margin-top: 8px;
+    }
+    .workflow-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+    <h1>
+        {{ _("Security Alert #%(id)s", id=alert.id) }}
+    </h1>
+
+    <p class="subtitle">
+        {{ alert_type_label }}
+        <span style="color: #64748b; font-size: 12px;">({{ alert.alert_type }})</span>
+    </p>
+
+
+    {% if error %}
+
+    <div class="login-error">
+        {{ error }}
+    </div>
+
+    {% endif %}
+
+
+    {% if success %}
+
+    <div class="success-message">
+        {{ success }}
+    </div>
+
+    {% endif %}
+
+
+    <!-- STEP 23.1: PLAIN-LANGUAGE SUMMARY (presentation only - the technical
+         panels below show the full, unmodified original record) -->
+    <div class="plain-explain-box">
+        <h3>{{ _("Plain-Language Summary") }}</h3>
+        <div class="plain-explain-row">
+            <span class="plain-explain-label">{{ _("What happened") }}</span>
+            {{ plain_explanation.what_happened }}
+        </div>
+        <div class="plain-explain-row">
+            <span class="plain-explain-label">{{ plain_explanation.subject_label }}</span>
+            {{ (plain_explanation.subject_value or _("Not available"))|ltr }}
+        </div>
+        <div class="plain-explain-row">
+            <span class="plain-explain-label">{{ _("Possible business impact") }}</span>
+            {{ plain_explanation.business_meaning }}
+        </div>
+        <div class="plain-explain-row">
+            <span class="plain-explain-label">{{ _("Recommended action") }}</span>
+            {{ plain_explanation.recommended_action[0] }}
+            {% if plain_explanation.recommended_action|length > 1 %}
+            {{ _("(and %(n)s more step(s) below)", n=plain_explanation.recommended_action|length - 1) }}
+            {% endif %}
+        </div>
+        <div class="plain-explain-row">
+            <span class="plain-explain-label">{{ _("Current state") }}</span>
+            {{ plain_explanation.status_label }}
+        </div>
+        {% if not plain_explanation.is_known_type %}
+        <div class="plain-explain-row" style="color:#94a3b8; font-size:12px;">
+            {{ _("This event type was not recognized by the plain-language summary - the explanation above is generic. See the technical sections below for the full details.") }}
+        </div>
+        {% endif %}
+    </div>
+
+
+    <!-- 1. ALERT SUMMARY -->
+    <div class="panel">
+
+        <h2>{{ alert.title }}</h2>
+
+        <p>{{ alert.description }}</p>
+
+        <div class="alert-summary-badges">
+
+            <div class="badge-item">
+                <span class="badge-label">{{ _("Severity") }}</span>
+                <span class="severity-{{ alert.severity|lower }}"
+                      title="{{ _('IOC Severity describes the configured severity of the matched indicator. Alert Severity is derived from the event\'s overall risk assessment.') }}">
+                    {{ severity_label(alert.severity) }}
+                </span>
+            </div>
+
+            <div class="badge-item">
+                <span class="badge-label">{{ _("Risk Score") }}</span>
+                <span>{{ alert.risk_score }} / 100</span>
+            </div>
+
+            <div class="badge-item">
+                <span class="badge-label">{{ _("Status") }}</span>
+                <span>
+                    {% if alert.status == "NEW" %}
+                    <span class="status-open">{{ _("NEW") }}</span>
+                    {% elif alert.status == "ACKNOWLEDGED" %}
+                    <span class="incident-investigating">{{ _("ACKNOWLEDGED") }}</span>
+                    {% elif alert.status == "ESCALATED" %}
+                    <span class="severity-high">{{ _("ESCALATED") }}</span>
+                    {% else %}
+                    <span class="incident-resolved">{{ _("CLOSED") }}</span>
+                    {% endif %}
+                </span>
+            </div>
+
+            <div class="badge-item">
+                <span class="badge-label">{{ _("Incident") }}</span>
+                <span>
+                    {% if alert.incident_id %}
+                        <a href="/incident/{{ alert.incident_id }}" class="details-link">
+                            {{ _("Incident #%(id)s", id=alert.incident_id) }}
+                        </a>
+                    {% else %}
+                        {{ _("Not Escalated") }}
+                    {% endif %}
+                </span>
+            </div>
+
+        </div>
+
+        <div class="alert-relationship">
+
+            <div>
+                <strong>{{ (alert.hostname or "-")|ltr }}</strong><br>
+                <small>{{ (alert.endpoint_ip or "-")|ltr }}</small><br>
+                <small style="color: #94a3b8;">{{ _("Process:") }} {{ (alert.process_name or "-")|ltr }}</small>
+            </div>
+
+            <div class="arrow">&rarr;</div>
+
+            <div class="wm-ip-cell">
+                {% set has_hostname = alert.domain and alert.domain != alert.destination_ip %}
+                {% if has_hostname %}
+                    {{ alert.domain|ltr }}
+                    {% if alert.destination_ip %}
+                    <br>
+                    <span class="wm-ip-inline">
+                        <span class="wm-ip-mono{% if alert.destination_ip|length > 15 %} wm-ip-long{% endif %}" title="{{ alert.destination_ip }}" dir="ltr">{{ alert.destination_ip }}</span>
+                        <button type="button" class="wm-copy-btn" data-ip="{{ alert.destination_ip }}" onclick="wmCopyIp(this)" title="{{ _('Copy IP address') }}">{{ _("Copy") }}</button>
+                    </span>
+                    {% endif %}
+                {% elif alert.destination_ip %}
+                <span class="wm-ip-inline">
+                    <span class="wm-ip-mono{% if alert.destination_ip|length > 15 %} wm-ip-long{% endif %}" title="{{ alert.destination_ip }}" dir="ltr">{{ alert.destination_ip }}</span>
+                    <button type="button" class="wm-copy-btn" data-ip="{{ alert.destination_ip }}" onclick="wmCopyIp(this)" title="{{ _('Copy IP address') }}">{{ _("Copy") }}</button>
+                </span>
+                {% elif alert.domain %}
+                {{ alert.domain|ltr }}
+                {% else %}
+                -
+                {% endif %}
+            </div>
+
+        </div>
+
+        <p class="alert-meta-line">
+            {{ _("Detected") }} {{ alert.created_at|ltr }}
+            &middot; {{ _("Last Updated") }} {{ (alert.updated_at or "-")|ltr }}
+            &middot; {{ _("Acknowledged By") }}
+            {% if alert.acknowledged_by %}
+                {{ _("%(who)s at %(when)s", who=alert.acknowledged_by, when=alert.acknowledged_at) }}
+            {% else %}
+                -
+            {% endif %}
+        </p>
+
+    </div>
+
+
+    <!-- 2. DETECTION EVIDENCE -->
+    <div class="panel">
+
+        <h2>{{ _("Detection Evidence") }}</h2>
+
+        <p class="subtitle">{{ _("Why the system created this Alert.") }}</p>
+
+        {% if detection_evidence %}
+
+            {% for evidence in detection_evidence %}
+
+                {% if evidence.ioc %}
+                <div class="evidence-card">
+                    <strong>{{ _("LOCAL IOC MATCH") }}</strong>
+                    <table>
+                        <tr>
+                            <th>{{ _("Indicator") }}</th>
+                            <td>{{ evidence.ioc.indicator_value|ltr }}</td>
+                        </tr>
+                        <tr>
+                            <th>{{ _("Indicator Type") }}</th>
+                            <td>{{ evidence.ioc.indicator_type }}</td>
+                        </tr>
+                        <tr>
+                            <th>
+                                <span class="help-tip" title="{{ _('IOC Severity describes the configured severity of the matched indicator. Alert Severity is derived from the event\'s overall risk assessment.') }}">
+                                    {{ _("IOC Severity") }}
+                                </span>
+                            </th>
+                            <td>
+                                <span class="severity-{{ evidence.ioc.severity|lower }}">{{ severity_label(evidence.ioc.severity) }}</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>{{ _("IOC Status") }}</th>
+                            <td>{{ _("Active") if evidence.ioc.active else _("Inactive") }}</td>
+                        </tr>
+                        {% if evidence.ioc.description %}
+                        <tr>
+                            <th>{{ _("Description") }}</th>
+                            <td>{{ evidence.ioc.description }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <th>{{ _("Indicator Source") }}</th>
+                            <td>
+                                {{ (evidence.ioc.source or "-")|ltr }}
+                                {% if evidence.ioc.created_by %}
+                                {{ _("(added %(when)s by %(who)s)", when=evidence.ioc.created_at, who=evidence.ioc.created_by) }}
+                                {% else %}
+                                {{ _("(added %(when)s)", when=evidence.ioc.created_at) }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>{{ _("Observed Endpoint") }}</th>
+                            <td>{{ (alert.hostname or "-")|ltr }} ({{ (alert.endpoint_ip or "-")|ltr }})</td>
+                        </tr>
+                        <tr>
+                            <th>{{ _("Observed Process") }}</th>
+                            <td>{{ (alert.process_name or "-")|ltr }}</td>
+                        </tr>
+                    </table>
+                </div>
+                {% else %}
+                <div class="evidence-card">
+                    {{ evidence.text }}
+                </div>
+                {% endif %}
+
+            {% endfor %}
+
+            <p class="alert-meta-line">
+                {{ _("No VirusTotal or AbuseIPDB contribution is recorded for this alert. Stored reputation data does not indicate whether these services were queried and returned a clean result, or were not reached - no external reputation result is claimed either way.") }}
+            </p>
+
+        {% else %}
+
+        <p>{{ _("No detection reasons recorded.") }}</p>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- 3. RISK ASSESSMENT -->
+    <div class="panel">
+
+        <h2>{{ _("Risk Assessment") }}</h2>
+
+        <table>
+            <tr>
+                <th>{{ _("Stored Risk Score") }}</th>
+                <td>{{ alert.risk_score }} / 100</td>
+            </tr>
+            <tr>
+                <th>
+                    <span class="help-tip" title="{{ _('Risk score bands: 0-14 INFO, 15-34 LOW, 35-59 MEDIUM, 60-79 HIGH, 80-100 CRITICAL. Alert Severity is derived from the stored Risk Score using these fixed bands.') }}">
+                        {{ _("Alert Severity") }}
+                    </span>
+                </th>
+                <td><span class="severity-{{ alert.severity|lower }}">{{ severity_label(alert.severity) }}</span></td>
+            </tr>
+            {% if matched_local_ioc_severity %}
+            <tr>
+                <th>
+                    <span class="help-tip" title="{{ _('IOC Severity describes the configured severity of the matched indicator. Alert Severity is derived from the event\'s overall risk assessment. The two are not expected to match.') }}">
+                        {{ _("Matched IOC Severity") }}
+                    </span>
+                </th>
+                <td><span class="severity-{{ matched_local_ioc_severity|lower }}">{{ severity_label(matched_local_ioc_severity) }}</span></td>
+            </tr>
+            {% endif %}
+        </table>
+
+        {% if risk_contributions %}
+
+        <p class="subtitle" style="margin-top: 18px;">
+            {% if risk_breakdown_complete %}{{ _("Risk Contributions") }}{% else %}{{ _("Verified Risk Evidence") }}{% endif %}
+        </p>
+
+        <table class="risk-contrib-table">
+            {% for contribution in risk_contributions %}
+            <tr>
+                <td>{{ contribution.label }}</td>
+                <td>+{{ contribution.points }}</td>
+            </tr>
+            {% endfor %}
+            <tr>
+                <th>{{ _("Total") }}{% if not risk_breakdown_complete %} {{ _("(verified evidence only)") }}{% endif %}</th>
+                <th>{{ alert.risk_score if risk_breakdown_complete else contribution_total }}</th>
+            </tr>
+        </table>
+
+        {% if not risk_breakdown_complete %}
+        <p class="alert-meta-line">
+            {{ _("A complete historical contribution breakdown is not available for this alert - the verified evidence above does not fully account for the stored Risk Score.") }}
+        </p>
+        {% endif %}
+
+        {% else %}
+
+        <p class="subtitle" style="margin-top: 18px;">{{ _("Verified Risk Evidence") }}</p>
+        <p>
+            {{ _("No detection reason could be matched to a specific, verifiable scoring contribution.") }}
+        </p>
+        <p class="alert-meta-line">
+            {{ _("A complete historical contribution breakdown is not available for this alert.") }}
+        </p>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- PHASE 12B.6D: ASSOCIATED EVENTS (explicit alert_events relationships) -->
+    {% if associated_events is not none %}
+    <div class="panel">
+
+        <h2>{{ _("Associated Events") }}</h2>
+        <p class="subtitle">
+            {{ _('Every web event explicitly recorded as related to this alert. The alert\'s "latest referenced event" is only the most recent one; earlier events are kept here. "Earliest" means the earliest explicit relationship, not a proven origin.') }}
+        </p>
+
+        {% if associated_events.total %}
+        <p>
+            <strong>{{ _("Total associated events:") }}</strong> {{ associated_events.total }}
+            &middot;
+            <strong>{{ _("Earliest associated event:") }}</strong>
+            <a href="{{ url_for('investigation_event', event_id=associated_events.first.id) }}">#{{ associated_events.first.id }}</a>
+            ({{ associated_events.first.event_time|ltr }})
+            &middot;
+            <strong>{{ _("Latest associated event:") }}</strong>
+            <a href="{{ url_for('investigation_event', event_id=associated_events.latest.id) }}">#{{ associated_events.latest.id }}</a>
+            ({{ associated_events.latest.event_time|ltr }})
+        </p>
+        <p style="color:#94a3b8; font-size: 12px;">
+            {% if associated_events.first_is_created_from %}
+                {{ _("The earliest event was recorded as the event this alert was created from.") }}
+            {% else %}
+                {% if associated_events.first.relationship_type == "DEDUP_REFRESH" %}
+                {{ _("The earliest event is a dedup refresh; it is not shown as the original event.") }}
+                {% else %}
+                {{ _("The earliest event is a legacy relationship (backfilled from stored evidence); it is not shown as the original event.") }}
+                {% endif %}
+            {% endif %}
+            {% for kind, n in associated_events.relationship_counts.items() | sort %}{{ n }} &times; {{ kind }}{% if not loop.last %}, {% endif %}{% endfor %}
+        </p>
+
+        <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <thead>
+                <tr style="border-bottom: 1px solid #334155; text-align: start;">
+                    <th style="padding: 4px 8px;">{{ _("Event") }}</th>
+                    <th style="padding: 4px 8px;">{{ _("Server receipt time") }}</th>
+                    <th style="padding: 4px 8px;">{{ _("Endpoint identity") }}</th>
+                    <th style="padding: 4px 8px;">{{ _("Process") }}</th>
+                    <th style="padding: 4px 8px;">{{ _("Destination") }}</th>
+                    <th style="padding: 4px 8px;">{{ _("Severity") }}</th>
+                    <th style="padding: 4px 8px;">{{ _("Relationship") }}</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for e in associated_events["items"] %}
+                <tr style="border-bottom: 1px solid #1e293b;">
+                    <td style="padding: 4px 8px;"><a href="{{ url_for('investigation_event', event_id=e.id) }}">{{ _("Investigate #%(id)s", id=e.id) }}</a></td>
+                    <td style="padding: 4px 8px;">{{ e.event_time|ltr }}</td>
+                    <td style="padding: 4px 8px;">{{ e.endpoint_ip|ltr }} {% if e.endpoint_uid %}<span style="color:#94a3b8;">[{{ _("stable") }} {{ e.endpoint_uid[:8] }}...]</span>{% else %}<span style="color:#94a3b8;">[{{ _("historical / IP-only") }}]</span>{% endif %}</td>
+                    <td style="padding: 4px 8px;">{{ (e.process_name or "-")|ltr }}</td>
+                    <td style="padding: 4px 8px;">{{ (e.domain or e.resolved_ip or e.destination or "-")|ltr }}</td>
+                    <td style="padding: 4px 8px;">{{ severity_label(e.severity) if e.severity else "-" }}</td>
+                    <td style="padding: 4px 8px;">
+                        {% if e.relationship_type == "CREATED_FROM" %}{{ _("Created from this event") }}
+                        {% elif e.relationship_type == "DEDUP_REFRESH" %}{{ _("Dedup refresh") }}
+                        {% elif e.relationship_type == "LEGACY_LATEST_REFERENCE" %}{{ _("Legacy latest reference") }}
+                        {% elif e.relationship_type == "LEGACY_TEXT_ASSOCIATION" %}{{ _("Legacy text association") }}
+                        {% else %}{{ e.relationship_type }}{% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% if associated_events.truncated %}
+        <p style="color:#94a3b8; font-size: 12px;">{{ _("Showing the %(shown)s most recent of %(total)s associated events.", shown=associated_events["items"]|length, total=associated_events.total) }}</p>
+        {% endif %}
+        {% else %}
+        <p>{{ _("No web events are recorded as associated with this alert.") }}</p>
+        {% endif %}
+
+    </div>
+    {% endif %}
+
+
+    <!-- PHASE 11D.1/12B.2: EXTERNAL INTELLIGENCE + INVESTIGATION PRIORITY -->
+    <div class="panel">
+
+        <h2>{{ _("Threat Intelligence Evidence") }}</h2>
+        <p class="subtitle">
+            {{ _("Third-party context (ThreatFox, URLhaus), kept visually separate from the Local IOC evidence above. A match here means the indicator is listed by that external source - it does not by itself prove this endpoint is compromised. Only ThreatFox affects Investigation Priority below; URLhaus is context-only in this phase.") }}
+        </p>
+
+        {% if ti_evidence_multi %}
+        <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="border-bottom: 1px solid #334155; text-align: start;">
+                    <th style="padding: 6px 10px;">{{ _("Provider") }}</th>
+                    <th style="padding: 6px 10px;">{{ _("Indicator") }}</th>
+                    <th style="padding: 6px 10px;">{{ _("Status") }}</th>
+                    <th style="padding: 6px 10px;">{{ _("Classification") }}</th>
+                    <th style="padding: 6px 10px;">{{ _("Evidence") }}</th>
+                    <th style="padding: 6px 10px;">{{ _("Retrieved") }}</th>
+                    <th style="padding: 6px 10px;">{{ _("Expires") }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for evidence in ti_evidence_multi %}
+                <tr style="border-bottom: 1px solid #1e293b;">
+                    <td style="padding: 6px 10px; text-transform: capitalize;">{{ evidence.provider }}</td>
+                    <td style="padding: 6px 10px;">
+                        {{ evidence.indicator_value|ltr }}
+                        <span style="color:#94a3b8;font-size:12px;">({{ evidence.indicator_type }})</span>
+                    </td>
+                    {% if evidence.lookup_status == "MATCH" %}
+                    <td style="padding: 6px 10px;">{{ _("Match") }}</td>
+                    <td style="padding: 6px 10px;">{{ evidence.classification or "-" }}</td>
+                    <td style="padding: 6px 10px;">
+                        {{ (evidence.summary if evidence.provider in ["virustotal", "cloudflare"] else (evidence.threat_type or evidence.malware_family or evidence.summary)) or "-" }}
+                        {% if evidence.confidence_level is not none %}<br>{{ _("Confidence:") }} {{ evidence.confidence_level }}{% endif %}
+                        {% if evidence.first_seen or evidence.last_seen %}<br>{{ _("First:") }} {{ (evidence.first_seen or "-")|ltr }} / {{ _("Last:") }} {{ (evidence.last_seen or "-")|ltr }}{% endif %}
+                    </td>
+                    <td style="padding: 6px 10px;">{{ (evidence.retrieved_at or "-")|ltr }} <span style="color:#94a3b8;font-size:12px;">({{ evidence.source or "-" }})</span></td>
+                    {% elif evidence.lookup_status == "NO_MATCH" %}
+                    <td style="padding: 6px 10px;">{{ _("No match") }}</td>
+                    <td style="padding: 6px 10px;">{{ evidence.classification or "-" }}</td>
+                    <td style="padding: 6px 10px;">{{ evidence.summary or "-" }}</td>
+                    <td style="padding: 6px 10px;">{{ (evidence.retrieved_at or "-")|ltr }} <span style="color:#94a3b8;font-size:12px;">({{ evidence.source or "-" }})</span></td>
+                    {% elif evidence.lookup_status == "RATE_LIMITED" %}
+                    <td style="padding: 6px 10px;">{{ _("Temporarily rate limited") }}</td>
+                    <td style="padding: 6px 10px;">{{ evidence.classification or "-" }}</td>
+                    <td style="padding: 6px 10px;">-</td>
+                    <td style="padding: 6px 10px;">-</td>
+                    {% elif evidence.lookup_status == "ERROR" %}
+                    <td style="padding: 6px 10px;">{{ _("Lookup unavailable") }}</td>
+                    <td style="padding: 6px 10px;">{{ evidence.classification or "-" }}</td>
+                    <td style="padding: 6px 10px;">-</td>
+                    <td style="padding: 6px 10px;">-</td>
+                    {% elif evidence.lookup_status == "NOT_CONFIGURED" %}
+                    <td style="padding: 6px 10px;">{{ _("Not configured") }}</td>
+                    <td style="padding: 6px 10px;">-</td>
+                    <td style="padding: 6px 10px;">{{ _("This provider has no API key configured.") }}</td>
+                    <td style="padding: 6px 10px;">-</td>
+                    {% else %}
+                    <td style="padding: 6px 10px;">{{ _("No stored evidence yet") }}</td>
+                    <td style="padding: 6px 10px;">-</td>
+                    <td style="padding: 6px 10px;">{{ _("Enrichment may not have run yet - this is not a negative result.") }}</td>
+                    <td style="padding: 6px 10px;">-</td>
+                    {% endif %}
+                    <td style="padding: 6px 10px;">{{ (evidence.expires_at or "-")|ltr }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <p>{{ _("No candidate indicators (public IP / domain / SHA-256 / MD5) were available for this alert.") }}</p>
+        {% endif %}
+
+    </div>
+
+
+    <!-- PHASE 12B.6B: INVESTIGATION ENTRY POINT -->
+    {% if alert.source_event_id %}
+    <p style="margin: 8px 0 16px;">
+        <a href="{{ url_for('investigation_event', event_id=alert.source_event_id) }}">{{ _("Investigate Referenced Event #%(id)s", id=alert.source_event_id) }}</a>
+        <span style="color:#94a3b8; font-size:12px;">({{ _("the alert's latest referenced event, not necessarily the first event that triggered it") }})</span>
+    </p>
+    {% endif %}
+
+
+    <!-- PHASE 12B.5B: CLOUDFLARE MANUAL INTELLIGENCE -->
+    {% if cf_ctx and cf_ctx["actions"] %}
+    <div class="panel">
+
+        <h2>{{ _("Cloudflare Intelligence (manual)") }}</h2>
+        <p class="subtitle">
+            {{ _("On-demand, cache-first context for the public IP and domain of this alert. Nothing is requested when this page loads. Results are context only and never change Threat Risk, Alert Severity, Behavioral Anomaly, Investigation Priority or any response action.") }}
+            {{ _("Cloudflare application budget: %(used)s / %(total)s used.", used=cf_ctx["budget"]["used"], total=cf_ctx["budget"]["budget"]) }}
+        </p>
+
+        {% if cf_message %}
+        <div class="notice notice-success">{{ cf_message }}</div>
+        {% endif %}
+
+        {% for action in cf_ctx["actions"] %}
+        <div style="margin: 6px 0;">
+            <span>{{ action["type"] }}: {{ action["value"]|ltr }}</span>
+            {% if action["state"] == "READY" and session.get("role") in ["admin", "analyst"] %}
+            <form method="POST" action="{{ url_for('cloudflare_investigate') }}" style="display:inline; margin-inline-start:8px;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="source" value="alert">
+                <input type="hidden" name="record_id" value="{{ alert['id'] }}">
+                <input type="hidden" name="indicator_type" value="{{ action['type'] }}">
+                <button type="submit">{{ _("Investigate with Cloudflare") }}</button>
+            </form>
+            {% elif action["state"] == "CACHED" %}
+            <span style="color:#94a3b8; margin-inline-start:8px;">{{ _("Cloudflare evidence cached (see table above)") }}</span>
+            {% elif action["state"] == "NOT_CONFIGURED" %}
+            <span style="color:#94a3b8; margin-inline-start:8px;">{{ _("Cloudflare not configured") }}</span>
+            {% elif action["state"] == "BUDGET_EXHAUSTED" %}
+            <span style="color:#94a3b8; margin-inline-start:8px;">{{ _("Application budget exhausted") }}</span>
+            {% elif action["state"] == "BACKOFF" %}
+            <span style="color:#94a3b8; margin-inline-start:8px;">{{ _("Paused after a rate-limit response") }}</span>
+            {% elif action["state"] == "NOT_ELIGIBLE" %}
+            <span style="color:#94a3b8; margin-inline-start:8px;">{{ _("Not eligible") }}</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+    </div>
+    {% endif %}
+
+
+    <!-- PHASE 11D.1: INVESTIGATION PRIORITY -->
+    <div class="panel">
+
+        <h2>{{ _("Investigation Priority") }}</h2>
+        <p class="subtitle">
+            {{ _("Analyst-facing prioritization only - does not replace Risk Score, Alert Severity, or Behavioral Anomaly above, and never triggers any automatic action on its own.") }}
+        </p>
+
+        {% if investigation_priority_level == "URGENT" %}
+        <span class="severity-critical">{{ _("URGENT") }}</span>
+        {% elif investigation_priority_level == "ELEVATED" %}
+        <span class="severity-high">{{ _("ELEVATED") }}</span>
+        {% elif investigation_priority_level == "REVIEW" %}
+        <span class="severity-low">{{ _("REVIEW") }}</span>
+        {% else %}
+        <span class="severity-info">{{ _("ROUTINE") }}</span>
+        {% endif %}
+
+        <ul style="margin-top: 10px;">
+            {% for reason in investigation_priority_reasons %}
+            <li>{{ reason }}</li>
+            {% endfor %}
+        </ul>
+
+    </div>
+
+
+    <!-- 4. RECOMMENDED RESPONSE -->
+    <div class="panel">
+
+        <h2>{{ _("Recommended Response") }}</h2>
+
+        <p class="subtitle">
+            {{ _("Rule-based analyst guidance. These recommendations have not been executed automatically.") }}
+        </p>
+
+        {% if recommended_response %}
+
+        <ol>
+            {% for step in recommended_response %}
+            <li>{{ step }}</li>
+            {% endfor %}
+        </ol>
+
+        {% else %}
+
+        <p>{{ _("No recommended response recorded.") }}</p>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- 5. RESPONSE ACTIONS -->
+    <div class="panel">
+
+        <h2>{{ _("Response Actions") }}</h2>
+
+        <p class="subtitle">
+            {{ _("Admin-only. Creates a command for the Endpoint Agent to pick up on its next poll - nothing happens instantly, and nothing is enforced unless the Agent itself has real enforcement enabled (see Activity & Actions Taken below for the Mode the Agent actually reported).") }}
+        </p>
+
+        {% if session.get("role") == "admin" %}
+
+        <div class="response-action-cards">
+
+            <div class="action-card finding">
+                <h3>{{ _("Block Destination") }}</h3>
+                <p>{{ _("Request the Endpoint Agent to block communication with this destination on the affected endpoint.") }}</p>
+
+                {% if already_blocked %}
+                <form method="POST" style="display: inline;"
+                      onsubmit="return confirm('{{ _('Request unblocking of this destination on the affected endpoint?') }}');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="unblock_destination">
+                    <button type="submit">{{ _("Unblock Destination") }}</button>
+                </form>
+                {% else %}
+                <form method="POST" style="display: inline;"
+                      onsubmit="return confirm('{{ _('Request blocking of this destination on the affected endpoint?') }}');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="block_destination">
+                    <button type="submit" {% if not (alert.domain or alert.destination_ip) %}disabled{% endif %}>
+                        {{ _("Block Destination") }}
+                    </button>
+                </form>
+                {% endif %}
+
+                {% if global_block_target %}
+                <p class="alert-meta-line">
+                    <a href="{{ url_for('organization_blocklist_new', target=global_block_target, reason='Escalated from Alert #' ~ alert.id, source_type='ALERT', source_id=alert.id) }}" class="details-link">
+                        {{ _("Block Organization-wide (%(target)s)", target=global_block_target) }}
+                    </a>
+                </p>
+                {% endif %}
+            </div>
+
+            <div class="action-card finding action-card-isolate">
+                <h3>{{ _("Isolate Endpoint") }}</h3>
+                <p>{{ _("Request containment of the affected endpoint while preserving the configured SOC communication path.") }}</p>
+
+                {% if already_isolated %}
+                <form method="POST" style="display: inline;"
+                      onsubmit="return confirm('{{ _('Request restoring network connectivity for this endpoint?') }}');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="restore_endpoint">
+                    <button type="submit">{{ _("Restore Endpoint") }}</button>
+                </form>
+                {% else %}
+                <form method="POST" style="display: inline;"
+                      onsubmit="return confirm('{{ _('Request isolation of this endpoint? This may restrict its network connectivity.') }}');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="isolate_endpoint">
+                    <button type="submit" class="delete-button" {% if not alert.endpoint_ip %}disabled{% endif %}>
+                        {{ _("Isolate Endpoint") }}
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+
+        </div>
+
+        {% else %}
+
+        <p>
+            {{ _("Current state: destination is %(block_state)s, endpoint is %(isolate_state)s. Only an Administrator can change this.",
+                 block_state=(_("blocked") if already_blocked else _("not blocked")),
+                 isolate_state=(_("isolated") if already_isolated else _("not isolated"))) }}
+        </p>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- 6. ACTIVITY & ACTIONS TAKEN -->
+    <div class="panel">
+
+        <h2>{{ _("Activity & Actions Taken") }}</h2>
+
+        <p class="subtitle">
+            {{ _("What was actually requested/executed - separate from Recommended Response above, which is advice only.") }}
+        </p>
+
+        {% if actions_taken %}
+
+        <table>
+            <tr>
+                <th>{{ _("Requested") }}</th>
+                <th>{{ _("Command") }}</th>
+                <th>{{ _("Requested By") }}</th>
+                <th>{{ _("Status") }}</th>
+                <th>{{ _("Mode") }}</th>
+                <th>{{ _("Completed") }}</th>
+                <th>{{ _("Result") }}</th>
+            </tr>
+            {% for command in actions_taken %}
+            <tr>
+                <td>{{ command.created_at|ltr }}</td>
+                <td>
+                    {{ command.command_type|ltr }}
+                    {% if command.target %}({{ command.target|ltr }}){% endif %}
+                </td>
+                <td>{{ command.requested_by or "-" }}</td>
+                <td>
+                    {% if command.status == "SUCCESS" %}
+                    <span class="status-open">{{ _("SUCCESS") }}</span>
+                    {% elif command.status == "FAILED" %}
+                    <span class="status-closed">{{ _("FAILED") }}</span>
+                    {% elif command.status == "PENDING" %}
+                    <span class="incident-investigating">{{ _("PENDING") }}</span>
+                    {% elif command.status == "ACKNOWLEDGED" %}
+                    <span class="incident-investigating">{{ _("ACKNOWLEDGED") }}</span>
+                    {% else %}
+                    {{ command.status }}
+                    {% endif %}
+                </td>
+                <td>
+                    {% if command.mode == "SIMULATED" %}
+                    <span class="mode-badge mode-badge-simulated">{{ _("SIMULATED") }}</span>
+                    {% elif command.mode == "ENFORCED" %}
+                    <span class="mode-badge mode-badge-enforced">{{ _("ENFORCED") }}</span>
+                    {% else %}
+                    <em>{{ _("awaiting Agent") }}</em>
+                    {% endif %}
+                </td>
+                <td>{{ (command.executed_at or "-")|ltr }}</td>
+                <td>{{ command.result_message or "-" }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        {% else %}
+
+        <p>{{ _("No response action has been requested for this alert.") }}</p>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- 7. ALERT WORKFLOW -->
+    <div class="panel">
+
+        <h2>{{ _("Alert Workflow") }}</h2>
+
+        <p class="subtitle">
+            {{ _("Any logged-in Analyst or Admin may acknowledge, close, or manually escalate an alert.") }}
+        </p>
+
+        <div class="workflow-actions">
+
+            <form method="POST" style="display: inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="acknowledge">
+                <button type="submit" {% if alert.status != "NEW" %}disabled{% endif %}>
+                    {{ _("Acknowledge") }}
+                </button>
+            </form>
+
+            <form method="POST" style="display: inline;"
+                  onsubmit="return confirm('{{ _('Escalate this alert to a Security Incident?') }}');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="escalate">
+                <button type="submit" {% if alert.status in ["ESCALATED", "CLOSED"] %}disabled{% endif %}>
+                    {{ _("Escalate to Incident") }}
+                </button>
+            </form>
+
+            <form method="POST" style="display: inline;"
+                  onsubmit="return confirm('{{ _('Close this alert? It will no longer appear as an active alert.') }}');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="close">
+                <button type="submit" {% if alert.status not in ["NEW", "ACKNOWLEDGED"] %}disabled{% endif %}>
+                    {{ _("Close Alert") }}
+                </button>
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <div class="panel">
+
+        <a href="/alerts" class="details-link">
+            &larr; {{ _("Back to Security Alerts") }}
+        </a>
+
+    </div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function wmCopyIp(button) {
+    var ip = button.getAttribute("data-ip");
+    if (!ip || !navigator.clipboard || !navigator.clipboard.writeText) {
+        return;
+    }
+    navigator.clipboard.writeText(ip).then(function () {
+        var original = button.innerHTML;
+        button.innerHTML = "&#10003;";
+        setTimeout(function () {
+            button.innerHTML = original;
+        }, 1200);
+    });
+}
+</script>
+{% endblock %}

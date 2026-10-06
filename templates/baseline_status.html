@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Baseline Status{% endblock %}
+
+{% block extra_head %}
+<style>
+    .baseline-progress-col {
+        min-width: 260px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<h1>Behavioral Baseline Status</h1>
+
+<p class="subtitle">
+    Read-only view of each trusted endpoint's behavioral baseline maturity (Phase 11C).
+    This is separate from Threat Risk — maturity/confidence describe how much history the
+    behavioral engine has for an endpoint, not how risky that endpoint is. No reset or
+    relearn action is available in this phase.
+</p>
+
+<div class="panel">
+
+    {% if endpoints %}
+    <div style="overflow-x: auto;">
+    <table>
+        <tr>
+            <th>Endpoint</th>
+            <th>Hostname</th>
+            <th>Maturity</th>
+            <th>Active Days</th>
+            <th>Analyzed Events Learned</th>
+            <th>Confidence</th>
+            <th>Latest Event Incorporated</th>
+            <th class="baseline-progress-col">Progress</th>
+        </tr>
+        {% for ep in endpoints %}
+        <tr>
+            <td class="wm-ip-cell">
+                <span class="wm-ip-inline">
+                    <span class="wm-ip-mono{% if ep.endpoint_ip|length > 15 %} wm-ip-long{% endif %}" title="{{ ep.endpoint_ip }}">{{ ep.endpoint_ip }}</span>
+                    <button type="button" class="wm-copy-btn" data-ip="{{ ep.endpoint_ip }}" onclick="wmCopyIp(this)" title="Copy IP address">Copy</button>
+                </span>
+            </td>
+            <td>{{ ep.hostname or "-" }}</td>
+            <td>
+                {% if ep.maturity_state == "READY" %}
+                <span class="badge badge-analyzed">READY</span>
+                {% elif ep.maturity_state == "ESTABLISHING" %}
+                <span class="badge badge-pending">ESTABLISHING</span>
+                {% else %}
+                <span class="badge badge-pending">LEARNING</span>
+                {% endif %}
+                {% if not ep.bootstrap_completed %}
+                <span class="analytics-note">(bootstrap in progress)</span>
+                {% endif %}
+            </td>
+            <td>{{ ep.active_days }}</td>
+            <td>{{ ep.analyzed_event_count }}</td>
+            <td>{{ ep.confidence }}</td>
+            <td>{{ ep.latest_event_time_incorporated or "-" }}</td>
+            <td class="baseline-progress-col">{{ ep.progress_note }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    </div>
+    {% else %}
+    <p>No trusted endpoint baseline state exists yet — the behavioral worker (behavioral_worker.py) may not have run yet.</p>
+    {% endif %}
+
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function wmCopyIp(button) {
+
+        var ip = button.getAttribute("data-ip");
+
+        if (!ip || !navigator.clipboard || !navigator.clipboard.writeText) {
+            return;
+        }
+
+        navigator.clipboard.writeText(ip).then(function () {
+
+            var original = button.innerHTML;
+
+            button.innerHTML = "Copied";
+
+            setTimeout(function () {
+                button.innerHTML = original;
+            }, 1200);
+
+        });
+    }
+</script>
+{% endblock %}

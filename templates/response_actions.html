@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Response Actions{% endblock %}
+
+{% block content %}
+
+<h1>Response Actions</h1>
+
+<p class="subtitle">
+    Audit trail of every containment command requested from an
+    Alert or Incident. This page is visibility only - actions
+    are requested from Alert/Incident pages, not here.
+</p>
+
+<div class="panel">
+
+    <h2>Filter</h2>
+
+    <form method="GET" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end;">
+
+        <div>
+            <label for="status">Status</label>
+            <select id="status" name="status">
+                <option value="">All</option>
+                {% for value in ["PENDING", "ACKNOWLEDGED", "EXECUTING", "SUCCESS", "FAILED", "CANCELLED"] %}
+                <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label for="command_type">Command</label>
+            <select id="command_type" name="command_type">
+                <option value="">All</option>
+                {% for value in ["BLOCK_DESTINATION", "UNBLOCK_DESTINATION", "ISOLATE_ENDPOINT", "RESTORE_ENDPOINT"] %}
+                <option value="{{ value }}" {% if command_type_filter == value %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div>
+            <label for="endpoint_ip">Endpoint</label>
+            <select id="endpoint_ip" name="endpoint_ip">
+                <option value="">All</option>
+                {% for row in distinct_endpoints %}
+                <option value="{{ row.endpoint_ip }}" {% if endpoint_filter == row.endpoint_ip %}selected{% endif %}>{{ row.endpoint_ip }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit">Apply Filter</button>
+        <a href="{{ url_for('response_actions') }}" class="details-link">Clear</a>
+
+    </form>
+
+</div>
+
+
+<div class="panel">
+
+    <h2>Commands</h2>
+
+    {% if commands %}
+
+    <div style="overflow-x: auto;">
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Time</th>
+            <th>Endpoint</th>
+            <th>Command</th>
+            <th>Target</th>
+            <th>Requested By</th>
+            <th>Mode</th>
+            <th>Status</th>
+            <th>Result</th>
+            <th>Alert</th>
+            <th>Incident</th>
+        </tr>
+        {% for command in commands %}
+        <tr>
+            <td>#{{ command.id }}</td>
+            <td>{{ command.created_at }}</td>
+            <td>{{ command.hostname or command.endpoint_ip or "-" }}</td>
+            <td>{{ command.command_type }}</td>
+            <td>{{ command.target or "-" }}</td>
+            <td>{{ command.requested_by or "-" }}</td>
+            <td>
+                {% if command.mode == "ENFORCED" %}
+                <span class="mode-badge mode-badge-enforced">ENFORCED</span>
+                {% elif command.mode == "SIMULATED" %}
+                <span class="mode-badge mode-badge-simulated">SIMULATED</span>
+                {% else %}
+                <em>pending</em>
+                {% endif %}
+            </td>
+            <td>{{ command.status }}</td>
+            <td>{{ command.result_message or "-" }}</td>
+            <td>
+                {% if command.alert_id %}
+                <a href="/alert/{{ command.alert_id }}" class="details-link">#{{ command.alert_id }}</a>
+                {% else %}-{% endif %}
+            </td>
+            <td>
+                {% if command.incident_id %}
+                <a href="/incident/{{ command.incident_id }}" class="details-link">#{{ command.incident_id }}</a>
+                {% else %}-{% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    </div>
+
+    {% else %}
+
+    <p>No response commands recorded yet.</p>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

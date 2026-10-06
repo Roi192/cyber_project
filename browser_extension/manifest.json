@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "SOC Browser URL Monitor",
+  "version": "0.1.0",
+  "description": "Reports visited page URLs (query strings and fragments removed by default) to the organization's security monitoring agent. Managed extension, deployed and configured by IT policy - not distributed on the Chrome/Edge Web Store.",
+  "permissions": ["webNavigation", "storage", "nativeMessaging", "alarms"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "minimum_chrome_version": "116"
+}
