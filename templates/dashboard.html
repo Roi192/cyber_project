@@ -1,437 +1,71 @@
 {% extends "base.html" %}
-
-{% block title %}{{ _("Dashboard") }}{% endblock %}
-
-{% block extra_head %}
-<script src="{{ url_for('static', filename='vendor/chart.min.js') }}"></script>
-{% endblock %}
-
+{% block title %}Dashboard - Website Monitor{% endblock %}
 {% block content %}
-
-<h1>{{ _("SOC Dashboard") }}</h1>
-
-<p class="subtitle">
-    {{ _("Cyber Security Monitoring, Detection & Response Platform") }}
-</p>
-
-
-<div class="cards">
-
-    <div class="card">
-        <h3>{{ _("Latest Scan Security Score") }}</h3>
-        <p class="number">{{ security_score }}/100</p>
-    </div>
-
-    <div class="card">
-        <h3>{{ _("Active Alerts") }}</h3>
-        <p class="number">{{ active_alerts }}</p>
-    </div>
-
-    <div class="card">
-        <h3>{{ _("Open Incidents") }}</h3>
-        <p class="number">{{ open_incidents }}</p>
-    </div>
-
-    <div class="card">
-        <h3>{{ _("Critical Incidents") }}</h3>
-        <p class="number">{{ critical_incidents }}</p>
-    </div>
-
-    <div class="card">
-        <h3>{{ _("Monitored Endpoints") }}</h3>
-        <p class="number">{{ monitored_endpoints }}</p>
-    </div>
-
-    <div class="card">
-        <h3>{{ _("Isolated Endpoints") }}</h3>
-        <p class="number">{{ isolated_endpoints }}</p>
-    </div>
-
-    <div class="card">
-        <h3>{{ _("Blocked Destinations") }}</h3>
-        <p class="number">{{ blocked_destinations }}</p>
-    </div>
-
-    <div class="card">
-        <h3>{{ _("Active IOCs") }}</h3>
-        <p class="number">{{ active_iocs }}</p>
-    </div>
-
-</div>
-
-
-<div class="panel">
-
-    <h2>{{ _("Security Analytics") }}</h2>
-
-    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; margin-top: 25px;">
-
-        <div>
-            <h3>{{ _("Alerts & Incidents by Severity") }}</h3>
-            <canvas id="severityChart"></canvas>
-        </div>
-
-        <div>
-            <h3>{{ _("Latest Scan Security Score Trend") }}</h3>
-            <canvas id="scoreChart"></canvas>
-        </div>
-
-    </div>
-
-</div>
-
-
-<div class="panel">
-
-    <h2>{{ _("Recent Security Alerts") }}</h2>
-
-    {% if recent_alerts %}
-
-    <div style="overflow-x: auto;">
-    <table>
-        <tr>
-            <th>{{ _("Time") }}</th>
-            <th>{{ _("Severity") }}</th>
-            <th>{{ _("Title") }}</th>
-            <th>{{ _("Endpoint") }}</th>
-            <th>{{ _("Destination") }}</th>
-            <th>{{ _("Risk") }}</th>
-            <th>{{ _("Status") }}</th>
-        </tr>
-        {% for alert in recent_alerts %}
-        <tr>
-            <td>{{ alert.created_at|ltr }}</td>
-            <td><span class="severity-{{ alert.severity|lower }}">{{ severity_label(alert.severity) }}</span></td>
-            <td><a href="/alert/{{ alert.id }}" class="details-link">{{ alert.title }}</a></td>
-            <td>{{ (alert.hostname or alert.endpoint_ip or "-")|ltr }}</td>
-            <td>{{ (alert.domain or alert.destination_ip or "-")|ltr }}</td>
-            <td>{{ alert.risk_score }}/100</td>
-            <td>
-                {% if alert.status == "NEW" %}<span class="status-open">{{ _("NEW") }}</span>
-                {% elif alert.status == "ACKNOWLEDGED" %}<span class="incident-investigating">{{ _("ACKNOWLEDGED") }}</span>
-                {% elif alert.status == "ESCALATED" %}<span class="severity-high">{{ _("ESCALATED") }}</span>
-                {% else %}<span class="incident-resolved">{{ _("CLOSED") }}</span>{% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-    </div>
-
-    {% else %}
-    <p>{{ _("No active alerts.") }}</p>
-    {% endif %}
-
-</div>
-
-
-<div class="panel" id="dashboard-recent-incidents">
-
-    <h2>{{ _("Recent Incidents") }}</h2>
-
-    {% if recent_incidents %}
-
-    <div style="overflow-x: auto;">
-    <table>
-        <tr>
-            <th>{{ _("ID") }}</th>
-            <th>{{ _("Time") }}</th>
-            <th>{{ _("Severity") }}</th>
-            <th>{{ _("Title") }}</th>
-            <th>{{ _("Target") }}</th>
-            <th>{{ _("Status") }}</th>
-        </tr>
-        {% for event in recent_incidents %}
-        <tr>
-            <td>#{{ event.id }}</td>
-            <td>{{ event.event_time|ltr }}</td>
-            <td><span class="severity-{{ event.severity|lower }}">{{ severity_label(event.severity) }}</span></td>
-            <td><a href="/incident/{{ event.id }}" class="details-link">{{ event.title }}</a></td>
-            <td>{{ (event.target_ip or event.username or "-")|ltr }}</td>
-            <td>
-                {% if event.status == "OPEN" %}<span class="incident-open">{{ _("OPEN") }}</span>
-                {% else %}<span class="incident-investigating">{{ _("INVESTIGATING") }}</span>{% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-    </div>
-
-    {% else %}
-    <p>{{ _("No open incidents.") }}</p>
-    {% endif %}
-
-</div>
-
-
-<div class="panel">
-
-    <h2>{{ _("Endpoint Activity") }}</h2>
-
-    <p class="subtitle">
-        {{ _("An endpoint is shown as STALE if it has not reported in for more than %(minutes)s minutes (display hint only, based on last_seen).", minutes=endpoint_stale_minutes) }}
-    </p>
-
-    {% if endpoint_activity %}
-
-    <div style="overflow-x: auto;">
-    <table>
-        <tr>
-            <th>{{ _("IP Address") }}</th>
-            <th>{{ _("Hostname") }}</th>
-            <th>{{ _("Status") }}</th>
-            <th>{{ _("Last Seen") }}</th>
-        </tr>
-        {% for item in endpoint_activity %}
-        <tr>
-            <td>{{ item.row.ip_address|ltr }}</td>
-            <td>{{ (item.row.hostname or "-")|ltr }}</td>
-            <td>
-                {% if item.row.status == "ISOLATED" %}
-                <span class="severity-high">{{ _("ISOLATED") }}</span>
-                {% elif item.is_stale %}
-                <span class="incident-investigating">{{ _("STALE") }}</span>
-                {% else %}
-                <span class="incident-resolved">{{ _("CONNECTED") }}</span>
-                {% endif %}
-            </td>
-            <td>{{ (item.row.last_seen or "-")|ltr }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-    </div>
-
-    {% else %}
-    <p>{{ _("No endpoints have reported yet.") }}</p>
-    {% endif %}
-
-</div>
-
-
-<div class="panel">
-
-    <h2>{{ _("Top Risky Destinations") }}</h2>
-
-    {% if top_risky_destinations %}
-
-    <div style="overflow-x: auto;">
-    <table>
-        <tr>
-            <th>{{ _("Destination") }}</th>
-            <th>{{ _("Highest Risk Score") }}</th>
-            <th>{{ _("Worst Severity Seen") }}</th>
-            <th>{{ _("Events") }}</th>
-        </tr>
-        {% for row in top_risky_destinations %}
-        <tr>
-            <td>{{ row.destination|ltr }}</td>
-            <td>{{ row.max_risk }}/100</td>
-            <td><span class="severity-{{ row.worst_severity|lower }}">{{ severity_label(row.worst_severity) }}</span></td>
-            <td>{{ row.hits }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-    </div>
-
-    {% else %}
-    <p>{{ _("No risky destinations recorded yet.") }}</p>
-    {% endif %}
-
-</div>
-
-
-<div class="panel">
-
-    <h2>{{ _("Recent Response Actions") }}</h2>
-
-    {% if recent_response_actions %}
-
-    <div style="overflow-x: auto;">
-    <table>
-        <tr>
-            <th>{{ _("Time") }}</th>
-            <th>{{ _("Endpoint") }}</th>
-            <th>{{ _("Command") }}</th>
-            <th>{{ _("Mode") }}</th>
-            <th>{{ _("Status") }}</th>
-        </tr>
-        {% for command in recent_response_actions %}
-        <tr>
-            <td>{{ command.created_at|ltr }}</td>
-            <td>{{ (command.hostname or command.endpoint_ip or "-")|ltr }}</td>
-            <td>{{ command.command_type|ltr }}</td>
-            <td>
-                {% if command.mode == "ENFORCED" %}
-                <span class="mode-badge mode-badge-enforced">{{ _("ENFORCED") }}</span>
-                {% elif command.mode == "SIMULATED" %}
-                <span class="mode-badge mode-badge-simulated">{{ _("SIMULATED") }}</span>
-                {% else %}<em>{{ _("pending") }}</em>{% endif %}
-            </td>
-            <td>{{ command.status }}</td>
-        </tr>
-        {% endfor %}
-    </table>
-    </div>
-
-    <p><a href="{{ url_for('response_actions') }}" class="details-link">{{ _("View all Response Actions →") }}</a></p>
-
-    {% else %}
-    <p>{{ _("No response actions have been requested yet.") }}</p>
-    {% endif %}
-
-</div>
-
-
-<div class="panel">
-
-    <h2>{{ _("Most Frequently Open Ports") }}</h2>
-
-    <canvas id="portsChart" height="100"></canvas>
-
-</div>
-
-
-<div class="panel">
-
-    <h2>{{ _("Recent Scans") }}</h2>
-
-    {% if recent_scans %}
-
-    <table>
-        <tr>
-            <th>{{ _("Scan ID") }}</th>
-            <th>{{ _("Target IP") }}</th>
-            <th>{{ _("Date & Time") }}</th>
-            <th>{{ _("User") }}</th>
-            <th>{{ _("Score") }}</th>
-        </tr>
-        {% for scan in recent_scans %}
-        <tr>
-            <td>{{ scan.id }}</td>
-            <td>{{ scan.target_ip|ltr }}</td>
-            <td>{{ scan.scan_time|ltr }}</td>
-            <td>{{ scan.username or "-" }}</td>
-            <td>{{ scan.security_score }}/100</td>
-        </tr>
-        {% endfor %}
-    </table>
-
-    {% else %}
-    <p>{{ _("No scans performed yet.") }}</p>
-    {% endif %}
-
-</div>
-
-
-<div class="panel">
-
-    <h2>{{ _("Recent Scanner Findings") }}</h2>
-
-    {% if recent_findings %}
-
-    <table>
-        <tr>
-            <th>{{ _("Target") }}</th>
-            <th>{{ _("Port") }}</th>
-            <th>{{ _("Finding") }}</th>
-            <th>{{ _("Severity") }}</th>
-        </tr>
-        {% for finding in recent_findings %}
-        <tr>
-            <td>{{ finding.target_ip|ltr }}</td>
-            <td>{{ finding.port }}</td>
-            <td>{{ finding.title }}</td>
-            <td><span class="severity-{{ finding.severity|lower }}">{{ severity_label(finding.severity) }}</span></td>
-        </tr>
-        {% endfor %}
-    </table>
-
-    {% else %}
-    <p>{{ _("No findings detected yet.") }}</p>
-    {% endif %}
-
-</div>
-
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-
-const severityData = {
-    labels: [
-        {{ _("Critical")|tojson }}, {{ _("High")|tojson }}, {{ _("Medium")|tojson }},
-        {{ _("Low")|tojson }}, {{ _("Info")|tojson }}
-    ],
-    datasets: [{
-        label: {{ _("Alerts & Incidents")|tojson }},
-        data: [
-            {{ severity_data["CRITICAL"] }},
-            {{ severity_data["HIGH"] }},
-            {{ severity_data["MEDIUM"] }},
-            {{ severity_data["LOW"] }},
-            {{ severity_data["INFO"] }}
-        ],
-        backgroundColor: ["#450a0a", "#ef4444", "#f59e0b", "#eab308", "#38bdf8"],
-        borderWidth: 0
-    }]
-};
-
-new Chart(document.getElementById("severityChart"), {
-    type: "doughnut",
-    data: severityData,
-    options: {
-        responsive: true,
-        plugins: { legend: { labels: { color: "#ffffff" } } }
-    }
-});
-
-const scoreLabels = {{ score_labels | tojson }};
-const scoreValues = {{ score_values | tojson }};
-
-new Chart(document.getElementById("scoreChart"), {
-    type: "line",
-    data: {
-        labels: scoreLabels,
-        datasets: [{
-            label: {{ _("Latest Scan Security Score")|tojson }},
-            data: scoreValues,
-            borderColor: "#38bdf8",
-            backgroundColor: "rgba(56, 189, 248, 0.15)",
-            tension: 0.3,
-            fill: true
-        }]
-    },
-    options: {
-        responsive: true,
-        scales: {
-            y: { beginAtZero: true, max: 100, ticks: { color: "#cbd5e1" }, grid: { color: "#334155" } },
-            x: { ticks: { color: "#cbd5e1" }, grid: { color: "#334155" } }
-        },
-        plugins: { legend: { labels: { color: "#ffffff" } } }
-    }
-});
-
-const portLabels = {{ open_port_labels | tojson }};
-const portValues = {{ open_port_values | tojson }};
-
-new Chart(document.getElementById("portsChart"), {
-    type: "bar",
-    data: {
-        labels: portLabels,
-        datasets: [{
-            label: {{ _("Open Port Detections")|tojson }},
-            data: portValues,
-            backgroundColor: "#2563eb"
-        }]
-    },
-    options: {
-        responsive: true,
-        scales: {
-            y: { beginAtZero: true, ticks: { color: "#cbd5e1", precision: 0 }, grid: { color: "#334155" } },
-            x: { ticks: { color: "#cbd5e1" }, grid: { color: "#334155" } }
-        },
-        plugins: { legend: { labels: { color: "#ffffff" } } }
-    }
-});
-
-</script>
+<section class="status-banner status-{{ summary.security_status|lower }}" id="security-status">
+  <div class="status-label">Security status</div>
+  <div class="status-value">
+    {% if summary.security_status == 'OK' %}All clear
+    {% elif summary.security_status == 'WARNING' %}Attention needed
+    {% else %}Threat detected{% endif %}
+  </div>
+  <div class="status-hint">
+    {% if summary.security_status == 'OK' %}No open alerts. Your computers have not visited any known dangerous websites.
+    {% elif summary.security_status == 'WARNING' %}There are open alerts about suspicious websites. Review them on the Alerts page.
+    {% else %}A computer visited a website identified as malicious. Review the Alerts page now.{% endif %}
+  </div>
+</section>
+
+<section class="tiles">
+  <div class="tile">
+    <div class="tile-label">Monitored computers</div>
+    <div class="tile-value" data-stat="computers">{{ summary.computers }}</div>
+  </div>
+  <div class="tile">
+    <div class="tile-label">Websites visited today</div>
+    <div class="tile-value" data-stat="visits_today">{{ summary.visits_today }}</div>
+  </div>
+  <div class="tile {{ 'tile-danger' if summary.threats_today else '' }}">
+    <div class="tile-label">Threats detected today</div>
+    <div class="tile-value" data-stat="threats_today">{{ summary.threats_today }}</div>
+  </div>
+  <div class="tile {{ 'tile-warn' if summary.open_alerts else '' }}">
+    <div class="tile-label">Open alerts</div>
+    <div class="tile-value" data-stat="open_alerts">{{ summary.open_alerts }}</div>
+  </div>
+</section>
+
+<section class="ti-row ti-{{ threat_intel.status|lower }}" id="ti-row">
+  <strong>Website reputation service:</strong>
+  <span class="ti-row-label">{{ ti_labels[threat_intel.status] }}</span>
+  <span class="ti-row-detail muted">{{ threat_intel.detail }}</span>
+  {% if threat_intel.status == 'NOT_CONFIGURED' %}
+  <span class="muted">Set <code>VT_API_KEY</code> in <code>.env</code> to enable malicious-website detection.</span>
+  {% endif %}
+</section>
+
+<section class="panel">
+  <div class="panel-head">
+    <h2>Recent browsing</h2>
+    <span class="live muted" id="live-indicator">Auto-refresh every 7 s</span>
+    <a class="link" href="{{ url_for('browsing') }}">See all</a>
+  </div>
+  <table class="table" id="visits-table" {% if not visits %}hidden{% endif %}>
+    <thead><tr><th>Time</th><th>Computer</th><th>User</th><th>Website</th><th>Status</th></tr></thead>
+    <tbody id="visits-body" data-columns="dashboard" data-max-rows="25"
+           data-last-id="{{ visits[0].id if visits else 0 }}" data-status="">
+    {% for v in visits %}
+      <tr>
+        <td class="mono">{{ v.visited_at }}</td>
+        <td>{{ v.computer_name }}</td>
+        <td>{{ v.username or '-' }}</td>
+        <td class="domain" title="{{ v.sanitized_url or v.domain }}">{{ v.domain }}</td>
+        <td><span class="badge badge-{{ v.reputation_status|lower }}">{{ status_labels[v.reputation_status] }}</span></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="empty" id="visits-empty" {% if visits %}hidden{% endif %}>
+    No website visits recorded yet. Once a computer sends its first visit, it will appear here automatically.
+  </p>
+</section>
 {% endblock %}

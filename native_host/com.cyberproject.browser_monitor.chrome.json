@@ -1,9 +1,0 @@
-{
-  "name": "com.cyberproject.browser_monitor",
-  "description": "SOC browser URL monitoring native host (Step 24A pilot)",
-  "path": "C:\\Users\\Moshe\\cyber_project\\native_host\\run_native_host.bat",
-  "type": "stdio",
-  "allowed_origins": [
-    "chrome-extension://ecfdgnfpbnejibkojahmiehimjdkgldb/"
-  ]
-}

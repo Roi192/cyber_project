@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Computers - Website Monitor{% endblock %}
+{% block content %}
+<section class="panel">
+  <div class="panel-head"><h2>Monitored computers</h2></div>
+  {% if endpoints %}
+  <table class="table">
+    <thead><tr><th>Computer</th><th>User</th><th>Last seen</th><th>Websites recorded</th><th>Open alerts</th></tr></thead>
+    <tbody>
+    {% for e in endpoints %}
+      <tr>
+        <td><strong>{{ e.computer_name }}</strong><div class="muted mono">{{ e.endpoint_uid }}</div></td>
+        <td>{{ e.username or '-' }}</td>
+        <td class="mono">{{ e.last_seen }}</td>
+        <td>{{ e.visit_count }}</td>
+        <td>{% if e.open_alerts %}<span class="badge badge-sev-high">{{ e.open_alerts }}</span>{% else %}0{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">No computers have registered yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

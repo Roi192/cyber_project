@@ -1,181 +1,40 @@
 <!DOCTYPE html>
-<html lang="{{ get_locale() }}" dir="{{ 'rtl' if is_rtl() else 'ltr' }}">
-
+<html lang="en">
 <head>
-
-    <meta charset="UTF-8">
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-
-    <title>{% block title %}{{ _("SOC Security Monitoring & Response System") }}{% endblock %}</title>
-
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='style.css') }}">
-
-    {% block extra_head %}{% endblock %}
-
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Website Monitor{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-
 <body>
-
-<div class="sidebar">
-
-    <h2>CyberSec SOC</h2>
-
-    <a href="{{ url_for('dashboard') }}"
-       class="{% if request.path == '/' %}nav-active{% endif %}">
-        {{ _("Dashboard") }}
-    </a>
-
-    <a href="{{ url_for('executive_dashboard.executive_summary') }}"
-       class="{% if request.path == '/executive-summary' %}nav-active{% endif %}">
-        {{ _("Executive Summary") }}
-    </a>
-
-    <div class="sidebar-section-title">{{ _("Monitoring") }}</div>
-
-    <a href="{{ url_for('alerts') }}"
-       class="{% if request.path.startswith('/alert') %}nav-active{% endif %}">
-        {{ _("Security Alerts") }}
-    </a>
-
-    <a href="{{ url_for('alerts') }}#security-incidents-panel"
-       class="{% if request.path.startswith('/incident') %}nav-active{% endif %}">
-        {{ _("Incidents") }}
-    </a>
-
-    <a href="{{ url_for('web_monitoring.web_monitoring') }}"
-       class="{% if request.path == '/web-monitoring' %}nav-active{% endif %}">
-        {{ _("Web / Endpoint Monitoring") }}
-    </a>
-
-    <a href="{{ url_for('network_events.network_events') }}"
-       class="{% if request.path == '/network-events' %}nav-active{% endif %}">
-        {{ _("Network Events") }}
-    </a>
-
-    <div class="sidebar-section-title">{{ _("Threat Intelligence") }}</div>
-
-    <a href="{{ url_for('threat_intel') }}"
-       class="{% if request.path == '/threat-intel' %}nav-active{% endif %}">
-        {{ _("Threat Intelligence") }}
-    </a>
-
-    <a href="{{ url_for('reputation.reputation') }}"
-       class="{% if request.path == '/reputation' %}nav-active{% endif %}">
-        {{ _("IP Reputation") }}
-    </a>
-
-    <a href="{{ url_for('threat_intel_health') }}"
-       class="{% if request.path == '/threat-intel-health' %}nav-active{% endif %}">
-        {{ _("Threat Intel Health") }}
-    </a>
-
-    <a href="{{ url_for('process_events_view') }}"
-       class="{% if request.path == '/process-events' %}nav-active{% endif %}">
-        {{ _("Process Events (Technical)") }}
-    </a>
-
-    <div class="sidebar-section-title">{{ _("Assessment") }}</div>
-
-    <a href="{{ url_for('scanner') }}"
-       class="{% if request.path == '/scanner' %}nav-active{% endif %}">
-        {{ _("Network Scanner") }}
-    </a>
-
-    <a href="{{ url_for('history') }}"
-       class="{% if request.path == '/history' %}nav-active{% endif %}">
-        {{ _("Scan History") }}
-    </a>
-
-    <a href="{{ url_for('reports') }}"
-       class="{% if request.path == '/reports' %}nav-active{% endif %}">
-        {{ _("Assessment Reports") }}
-    </a>
-
-    <div class="sidebar-section-title">{{ _("Response") }}</div>
-
-    <a href="{{ url_for('response_actions') }}"
-       class="{% if request.path == '/response-actions' %}nav-active{% endif %}">
-        {{ _("Response Actions") }}
-    </a>
-
-    <a href="{{ url_for('organization_blocklist') }}"
-       class="{% if request.path.startswith('/response/organization-blocklist') %}nav-active{% endif %}">
-        {{ _("Organization Blocklist") }}
-    </a>
-
-    <div class="sidebar-section-title">{{ _("Analytics") }}</div>
-
-    <a href="{{ url_for('security_analytics') }}"
-       class="{% if request.path == '/security-analytics' %}nav-active{% endif %}">
-        {{ _("Security Analytics") }}
-    </a>
-
-    <a href="{{ url_for('baseline_status') }}"
-       class="{% if request.path == '/baseline-status' %}nav-active{% endif %}">
-        {{ _("Baseline Status") }}
-    </a>
-
-    <a href="{{ url_for('security_reports') }}"
-       class="{% if request.path.startswith('/security-report') %}nav-active{% endif %}">
-        {{ _("Security Reports") }}
-    </a>
-
-    {% if session.get("role") == "admin" %}
-
-    <div class="sidebar-section-title">{{ _("Administration") }}</div>
-
-    <a href="{{ url_for('logs') }}"
-       class="{% if request.path == '/logs' %}nav-active{% endif %}">
-        {{ _("Audit Logs") }}
-    </a>
-
-    <a href="{{ url_for('users') }}"
-       class="{% if request.path == '/users' %}nav-active{% endif %}">
-        {{ _("User Management") }}
-    </a>
-
-    {% endif %}
-
-    <a href="{{ url_for('logout') }}" style="margin-top: 22px;">
-        {{ _("Logout") }}
-    </a>
-
-</div>
-
-
-<div class="main">
-
-    <div class="topbar">
-
-        <div class="lang-switch" role="group" aria-label="{{ _('Language') }}">
-            {% for code, label in SUPPORTED_LANGUAGES.items() %}
-            <a href="{{ url_for('i18n.set_language', lang_code=code, next=request.full_path) }}"
-               class="lang-switch-option {% if get_locale() == code %}lang-switch-active{% endif %}">
-                {{ label }}
-            </a>
-            {% endfor %}
-        </div>
-
-        {% if session.get("username") %}
-        <span class="current-user">{{ session.get("username") }}</span>
-        {% if session.get("role") == "admin" %}
-        <span class="role-admin">{{ _("Administrator") }}</span>
-        {% else %}
-        <span class="role-analyst">{{ _("Analyst") }}</span>
-        {% endif %}
-        {% endif %}
-
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span>Website Monitor</span>
     </div>
+    <div class="topbar-right">
+      <span class="ti-pill ti-{{ threat_intel.status|lower }}" id="ti-pill" title="{{ threat_intel.detail }}">
+        Threat intel: <span class="ti-pill-label">{{ ti_labels[threat_intel.status] }}</span>
+      </span>
+      <span class="dev-pill" id="dev-pill" {% if not dev_mode %}hidden{% endif %}
+            title="API_KEY is empty: endpoint uploads are not authenticated. Development only.">DEV MODE</span>
+      <nav class="nav">
+        <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' else '' }}">Dashboard</a>
+        <a href="{{ url_for('browsing') }}" class="{{ 'active' if request.endpoint == 'browsing' else '' }}">Browsing</a>
+        <a href="{{ url_for('alerts') }}" class="{{ 'active' if request.endpoint == 'alerts' else '' }}">Alerts</a>
+        <a href="{{ url_for('endpoints') }}" class="{{ 'active' if request.endpoint == 'endpoints' else '' }}">Computers</a>
+      </nav>
+    </div>
+  </header>
 
+  <main class="content">
     {% block content %}{% endblock %}
+  </main>
 
-</div>
+  <footer class="footer">
+    Only website names and paths are recorded. Passwords, cookies, form contents and page contents are never collected.
+  </footer>
 
-{% block extra_scripts %}{% endblock %}
-
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
-
 </html>

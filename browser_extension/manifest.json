@@ -1,11 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "SOC Browser URL Monitor",
-  "version": "0.1.0",
-  "description": "Reports visited page URLs (query strings and fragments removed by default) to the organization's security monitoring agent. Managed extension, deployed and configured by IT policy - not distributed on the Chrome/Edge Web Store.",
-  "permissions": ["webNavigation", "storage", "nativeMessaging", "alarms"],
-  "background": {
-    "service_worker": "background.js"
-  },
-  "minimum_chrome_version": "116"
+  "name": "Website Monitor Collector",
+  "version": "0.2.0",
+  "description": "Reports the domains this browser visits to the company's Website Monitor server. Sends domain + path only - never query strings, fragments, cookies, form data or page contents.",
+  "permissions": ["webNavigation", "storage"],
+  "host_permissions": ["http://127.0.0.1:5002/*", "http://localhost:5002/*"],
+  "background": { "service_worker": "background.js" },
+  "options_page": "options.html"
 }
