@@ -1,126 +1,146 @@
 // Website Monitor Collector - Manifest V3 service worker.
 //
 // Observes top-level http/https navigations and sends ONLY
-// { domain, scheme://host/path } to the local Website Monitor server.
+// { domain, scheme://host/path } to the central Website Monitor server, plus a
+// small heartbeat so the server knows this browser is online.
 // Privacy is enforced here first (the server sanitizes again):
 //   - query string and fragment are dropped before anything leaves the browser
 //   - user:password in the URL is dropped
 //   - no cookies, headers, form data, page content or history are ever read
 // Nothing is retried: if the server is offline the event is simply dropped.
+importScripts("common.js");
 
-const DEFAULTS = {
-  server_url: "http://127.0.0.1:5002",
-  computer_name: "",      // filled on first run with "BROWSER-xxxx" (see ensureIdentity)
-  username: "",           // optional, set on the options page
-  api_key: ""             // optional X-Api-Key; blank = server DEV MODE
-};
+var DEDUP_WINDOW_MS = 5000;        // same tab + same sanitized URL within 5s -> one event
+var HEARTBEAT_ALARM = "heartbeat";
+var HEARTBEAT_MINUTES = 1;         // the server treats a computer as online for 3 minutes after the last beat
+var ERROR_LOG_INTERVAL_MS = 60000;
 
-const DEDUP_WINDOW_MS = 5000;     // same tab + same sanitized URL within 5s -> one event
-const ERROR_LOG_INTERVAL_MS = 60000;
-
-let lastSent = {};                // tabId -> { url, at }
-let lastErrorLogAt = 0;
+var lastSent = {};                 // tabId -> { url, at }
+var lastErrorLogAt = 0;
+var identityInFlight = null;
 
 // --------------------------------------------------------------------
-// identity (persisted once in chrome.storage.local)
+// identity + settings (persisted in chrome.storage.local)
 // --------------------------------------------------------------------
-async function ensureIdentity() {
-  const stored = await chrome.storage.local.get(["endpoint_uid", "computer_name", "username", "api_key", "server_url"]);
-  const updates = {};
+async function loadIdentity() {
+  var stored = await chrome.storage.local.get(["endpoint_uid", "computer_name", "username", "api_key", "server_url"]);
+  var updates = {};
   if (!stored.endpoint_uid) {
-    updates.endpoint_uid = crypto.randomUUID();
+    updates.endpoint_uid = crypto.randomUUID();        // generated once per installation
   }
   if (!stored.computer_name) {
-    const uid = stored.endpoint_uid || updates.endpoint_uid;
-    // The extension cannot read the Windows computer name - this is a
+    var uid = stored.endpoint_uid || updates.endpoint_uid;
+    // A browser extension cannot read the Windows computer name. This is a
     // clearly labelled installation name the owner can change in Options.
     updates.computer_name = "BROWSER-" + uid.slice(0, 8).toUpperCase();
   }
   if (Object.keys(updates).length) {
     await chrome.storage.local.set(updates);
   }
-  return Object.assign({}, DEFAULTS, stored, updates);
+  var cfg = Object.assign({}, stored, updates);
+  cfg.server_url = cfg.server_url || DEFAULT_SERVER_URL;
+  cfg.username = cfg.username || "";
+  cfg.api_key = cfg.api_key || "";
+  return cfg;
 }
 
-chrome.runtime.onInstalled.addListener(() => { ensureIdentity(); });
-
-// --------------------------------------------------------------------
-// privacy sanitization - runs BEFORE any network call
-// --------------------------------------------------------------------
-function sanitize(rawUrl) {
-  let u;
-  try { u = new URL(rawUrl); } catch (e) { return null; }
-  if (u.protocol !== "http:" && u.protocol !== "https:") return null;
-  const host = u.hostname.toLowerCase().replace(/\.$/, "");
-  if (!host || !host.includes(".")) return null;            // skip intranet single labels
-  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(host)) return null;    // domain-level only, no bare IPs
-  // scheme + host + path only: no search, no hash, no credentials, no port
-  return { domain: host, url: u.protocol + "//" + host + (u.pathname || "/") };
+// concurrent callers (install + first navigation) share one load, so the UUID is created once
+function ensureIdentity() {
+  if (!identityInFlight) {
+    identityInFlight = loadIdentity().finally(function () { identityInFlight = null; });
+  }
+  return identityInFlight;
 }
 
-function browserName() {
-  const brands = (navigator.userAgentData && navigator.userAgentData.brands) || [];
-  if (brands.some(b => /Edge/i.test(b.brand))) return "Edge";
-  if (/Edg\//.test(navigator.userAgent)) return "Edge";
-  return "Chrome";
+function registrationPayload(cfg) {
+  return { endpoint_uid: cfg.endpoint_uid, computer_name: cfg.computer_name, username: cfg.username, browser: browserName() };
 }
 
 function localIsoTimestamp() {
   // Local time without timezone suffix (the server stores what it gets).
-  const d = new Date();
-  const p = n => String(n).padStart(2, "0");
+  var d = new Date();
+  function p(n) { return String(n).padStart(2, "0"); }
   return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) + "T" +
          p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
 }
 
 // --------------------------------------------------------------------
-// navigation listener
+// server calls (no retries; the API key is only ever sent as a header)
 // --------------------------------------------------------------------
-chrome.webNavigation.onCommitted.addListener(async (details) => {
-  if (details.frameId !== 0) return;                        // top-level only, no iframes
-  const clean = sanitize(details.url);
-  if (!clean) return;                                        // chrome://, edge://, file://, extensions, etc.
-
-  const now = Date.now();
-  const prev = lastSent[details.tabId];
-  if (prev && prev.url === clean.url && now - prev.at < DEDUP_WINDOW_MS) return;   // reload/redirect burst
-  lastSent[details.tabId] = { url: clean.url, at: now };
-
-  const cfg = await ensureIdentity();
-  const event = {
-    endpoint_uid: cfg.endpoint_uid,
-    computer_name: cfg.computer_name,
-    username: cfg.username || undefined,
-    domain: clean.domain,
-    url: clean.url,
-    browser: browserName(),
-    timestamp: localIsoTimestamp()
-  };
-  await send(cfg, event);
-});
-
-chrome.tabs.onRemoved.addListener((tabId) => { delete lastSent[tabId]; });
-
-async function send(cfg, event) {
-  const headers = { "Content-Type": "application/json" };
-  if (cfg.api_key) headers["X-Api-Key"] = cfg.api_key;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 5000);
+async function callServer(cfg, path, body) {
+  var norm = normalizeServerUrl(cfg.server_url);
+  if (!norm.ok) {
+    logError("the server address is not valid - open the extension options");
+    return { ok: false, status: 0 };
+  }
+  var headers = { "Content-Type": "application/json" };
+  if (cfg.api_key) { headers["X-Api-Key"] = cfg.api_key; }
+  var controller = new AbortController();
+  var timer = setTimeout(function () { controller.abort(); }, 5000);
   try {
-    const res = await fetch(cfg.server_url.replace(/\/$/, "") + "/api/web-events", {
-      method: "POST", headers, body: JSON.stringify(event), signal: controller.signal
-    });
-    if (!res.ok) logError("server responded " + res.status);
+    var res = await fetch(norm.url + path, { method: "POST", headers: headers, body: JSON.stringify(body), signal: controller.signal });
+    if (res.status === 401) { logError("the server rejected the API key"); }
+    else if (!res.ok) { logError("server responded " + res.status); }
+    return { ok: res.ok, status: res.status };
   } catch (e) {
-    logError("server unreachable");                         // no retry - next navigation tries again
+    logError("server unreachable");                       // no retry - the next event or heartbeat tries again
+    return { ok: false, status: 0 };
   } finally {
     clearTimeout(timer);
   }
 }
 
 function logError(msg) {
-  const now = Date.now();
-  if (now - lastErrorLogAt < ERROR_LOG_INTERVAL_MS) return;  // at most one line per minute
+  var now = Date.now();
+  if (now - lastErrorLogAt < ERROR_LOG_INTERVAL_MS) { return; }   // at most one line per minute
   lastErrorLogAt = now;
   console.warn("[Website Monitor] " + msg);
 }
+
+// --------------------------------------------------------------------
+// navigation listener
+// --------------------------------------------------------------------
+chrome.webNavigation.onCommitted.addListener(async function (details) {
+  if (details.frameId !== 0) { return; }                  // top-level only, no iframes
+  var clean = sanitizeNavigation(details.url);
+  if (!clean) { return; }                                  // chrome://, edge://, file://, extensions, etc.
+  if (isBrowserNoise(clean.domain, clean.path)) { return; } // e.g. the Edge New Tab Page
+
+  var now = Date.now();
+  var prev = lastSent[details.tabId];
+  if (prev && prev.url === clean.url && now - prev.at < DEDUP_WINDOW_MS) { return; }   // reload/redirect burst
+  lastSent[details.tabId] = { url: clean.url, at: now };
+
+  var cfg = await ensureIdentity();
+  var event = Object.assign(registrationPayload(cfg), {
+    domain: clean.domain,
+    url: clean.url,
+    timestamp: localIsoTimestamp()
+  });
+  await callServer(cfg, "/api/web-events", event);
+});
+
+chrome.tabs.onRemoved.addListener(function (tabId) { delete lastSent[tabId]; });
+
+// --------------------------------------------------------------------
+// heartbeat: "is this browser online?" - one small POST per minute
+// --------------------------------------------------------------------
+async function sendHeartbeat() {
+  var cfg = await ensureIdentity();
+  await callServer(cfg, "/api/heartbeat", registrationPayload(cfg));
+}
+
+function ensureHeartbeatAlarm() {
+  chrome.alarms.get(HEARTBEAT_ALARM, function (alarm) {
+    if (!alarm) {
+      chrome.alarms.create(HEARTBEAT_ALARM, { delayInMinutes: HEARTBEAT_MINUTES, periodInMinutes: HEARTBEAT_MINUTES });
+    }
+  });
+}
+
+chrome.alarms.onAlarm.addListener(function (alarm) {
+  if (alarm.name === HEARTBEAT_ALARM) { sendHeartbeat(); }
+});
+chrome.runtime.onInstalled.addListener(function () { ensureHeartbeatAlarm(); sendHeartbeat(); });
+chrome.runtime.onStartup.addListener(function () { ensureHeartbeatAlarm(); sendHeartbeat(); });
+ensureHeartbeatAlarm();

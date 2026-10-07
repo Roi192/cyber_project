@@ -13,11 +13,9 @@
       <span>Website Monitor</span>
     </div>
     <div class="topbar-right">
-      <span class="ti-pill ti-{{ threat_intel.status|lower }}" id="ti-pill" title="{{ threat_intel.detail }}">
-        Threat intel: <span class="ti-pill-label">{{ ti_labels[threat_intel.status] }}</span>
+      <span class="ti-pill ti-{{ threat_intel.status|lower }}" id="ti-pill" title="{{ threat_intel.summary }}">
+        Threat intelligence: <span class="ti-pill-label">{{ threat_intel.label }}</span>
       </span>
-      <span class="dev-pill" id="dev-pill" {% if not dev_mode %}hidden{% endif %}
-            title="API_KEY is empty: endpoint uploads are not authenticated. Development only.">DEV MODE</span>
       <nav class="nav">
         <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' else '' }}">Dashboard</a>
         <a href="{{ url_for('browsing') }}" class="{{ 'active' if request.endpoint == 'browsing' else '' }}">Browsing</a>
@@ -27,12 +25,25 @@
     </div>
   </header>
 
+  <div class="dev-bar" id="dev-bar" {% if not dev_mode %}hidden{% endif %}>
+    <span><strong>Development mode</strong> &mdash; API authentication is disabled.</span>
+    <details class="dev-details">
+      <summary>Technical details</summary>
+      <p>
+        The server accepts uploads from any computer without an API key.
+        {% if lan_exposed_without_key %}It is reachable from the network, so anyone who can reach it can submit data. {% endif %}
+        Set <code>API_KEY</code> in <code>.env</code>, enter the same key in each browser extension and restart the server.
+      </p>
+    </details>
+  </div>
+
   <main class="content">
     {% block content %}{% endblock %}
   </main>
 
   <footer class="footer">
-    Only website names and paths are recorded. Passwords, cookies, form contents and page contents are never collected.
+    Website domains and sanitized paths are recorded. Passwords, cookies, form contents, page contents,
+    query parameters and URL fragments are not collected.
   </footer>
 
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>

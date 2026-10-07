@@ -1,10 +1,17 @@
 {
   "manifest_version": 3,
   "name": "Website Monitor Collector",
-  "version": "0.2.0",
-  "description": "Reports the domains this browser visits to the company's Website Monitor server. Sends domain + path only - never query strings, fragments, cookies, form data or page contents.",
-  "permissions": ["webNavigation", "storage"],
-  "host_permissions": ["http://127.0.0.1:5002/*", "http://localhost:5002/*"],
+  "version": "0.3.0",
+  "description": "Reports the websites (domain and path only) this browser visits to your company's Website Monitor server.",
+  "permissions": ["webNavigation", "storage", "alarms"],
+  "host_permissions": [
+    "http://127.0.0.1:5002/*",
+    "http://localhost:5002/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
   "background": { "service_worker": "background.js" },
   "options_page": "options.html"
 }

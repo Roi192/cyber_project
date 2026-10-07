@@ -3,9 +3,13 @@ import os
 
 from dotenv import load_dotenv
 
-load_dotenv()
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Always the .env next to this file. A bare load_dotenv() searches from the current
+# directory when Python was started interactively (python -c, a REPL), so the result
+# would depend on how and from where the process is launched. Real environment
+# variables still win over the file (load_dotenv does not override them).
+load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 
 def _int(name, default):

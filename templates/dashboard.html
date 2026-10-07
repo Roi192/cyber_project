@@ -1,24 +1,23 @@
 {% extends "base.html" %}
 {% block title %}Dashboard - Website Monitor{% endblock %}
 {% block content %}
-<section class="status-banner status-{{ summary.security_status|lower }}" id="security-status">
+<section class="status-hero status-{{ overview.css }}" id="security-status">
   <div class="status-label">Security status</div>
-  <div class="status-value">
-    {% if summary.security_status == 'OK' %}All clear
-    {% elif summary.security_status == 'WARNING' %}Attention needed
-    {% else %}Threat detected{% endif %}
-  </div>
-  <div class="status-hint">
-    {% if summary.security_status == 'OK' %}No open alerts. Your computers have not visited any known dangerous websites.
-    {% elif summary.security_status == 'WARNING' %}There are open alerts about suspicious websites. Review them on the Alerts page.
-    {% else %}A computer visited a website identified as malicious. Review the Alerts page now.{% endif %}
-  </div>
+  <div class="status-value">{{ overview.title }}</div>
+  <p class="status-hint">{{ overview.message }}</p>
+  <p class="status-affected" {% if not overview.affected %}hidden{% endif %}>{{ overview.affected }}</p>
+  <p class="status-coverage">{{ overview.coverage_line }}</p>
+  <a class="btn" id="status-action" href="{{ overview.action.url }}">{{ overview.action.label }}</a>
 </section>
 
 <section class="tiles">
   <div class="tile">
     <div class="tile-label">Monitored computers</div>
     <div class="tile-value" data-stat="computers">{{ summary.computers }}</div>
+  </div>
+  <div class="tile">
+    <div class="tile-label">Online now</div>
+    <div class="tile-value" data-stat="online_now">{{ summary.online_now }}</div>
   </div>
   <div class="tile">
     <div class="tile-label">Websites visited today</div>
@@ -28,44 +27,58 @@
     <div class="tile-label">Threats detected today</div>
     <div class="tile-value" data-stat="threats_today">{{ summary.threats_today }}</div>
   </div>
-  <div class="tile {{ 'tile-warn' if summary.open_alerts else '' }}">
-    <div class="tile-label">Open alerts</div>
-    <div class="tile-value" data-stat="open_alerts">{{ summary.open_alerts }}</div>
+  <div class="tile">
+    <div class="tile-label">Reputation coverage</div>
+    <div class="tile-value" data-stat="coverage_value">{% if overview.coverage.percent is none %}&ndash;{% else %}{{ overview.coverage.percent }}%{% endif %}</div>
+    <div class="tile-sub" data-stat="coverage_sub">{% if overview.coverage.total %}{{ overview.coverage.evaluated }} of {{ overview.coverage.total }} checked{% else %}No browsing yet today{% endif %}</div>
   </div>
 </section>
 
-<section class="ti-row ti-{{ threat_intel.status|lower }}" id="ti-row">
-  <strong>Website reputation service:</strong>
-  <span class="ti-row-label">{{ ti_labels[threat_intel.status] }}</span>
-  <span class="ti-row-detail muted">{{ threat_intel.detail }}</span>
-  {% if threat_intel.status == 'NOT_CONFIGURED' %}
-  <span class="muted">Set <code>VT_API_KEY</code> in <code>.env</code> to enable malicious-website detection.</span>
-  {% endif %}
+<section class="panel" id="attention-panel">
+  <div class="panel-head"><h2>Needs attention</h2></div>
+  <ul class="attention-list" id="attention-list" {% if not overview.attention %}hidden{% endif %}>
+    {% for item in overview.attention %}
+    <li class="attention-item level-{{ item.level }}">
+      {% if item.url %}<a href="{{ item.url }}">{{ item.text }}</a>{% else %}{{ item.text }}{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  <p class="empty" id="attention-empty" {% if overview.attention %}hidden{% endif %}>No issues currently require your attention.</p>
+  <div class="ti-row ti-{{ threat_intel.status|lower }}" id="ti-row">
+    <strong>Threat intelligence:</strong>
+    <span class="ti-row-label">{{ threat_intel.label }}</span>
+    <span class="ti-row-detail muted">{{ threat_intel.summary }}</span>
+    <details class="tech"><summary>Technical details</summary>
+      <div class="muted mono ti-row-tech">{{ threat_intel.detail }}</div>
+    </details>
+  </div>
 </section>
 
 <section class="panel">
   <div class="panel-head">
-    <h2>Recent browsing</h2>
+    <h2>Recent activity</h2>
     <span class="live muted" id="live-indicator">Auto-refresh every 7 s</span>
     <a class="link" href="{{ url_for('browsing') }}">See all</a>
   </div>
-  <table class="table" id="visits-table" {% if not visits %}hidden{% endif %}>
-    <thead><tr><th>Time</th><th>Computer</th><th>User</th><th>Website</th><th>Status</th></tr></thead>
-    <tbody id="visits-body" data-columns="dashboard" data-max-rows="25"
-           data-last-id="{{ visits[0].id if visits else 0 }}" data-status="">
-    {% for v in visits %}
-      <tr>
-        <td class="mono">{{ v.visited_at }}</td>
-        <td>{{ v.computer_name }}</td>
-        <td>{{ v.username or '-' }}</td>
-        <td class="domain" title="{{ v.sanitized_url or v.domain }}">{{ v.domain }}</td>
-        <td><span class="badge badge-{{ v.reputation_status|lower }}">{{ status_labels[v.reputation_status] }}</span></td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
+  <div class="table-wrap" id="visits-table" {% if not visits %}hidden{% endif %}>
+    <table class="table">
+      <thead><tr><th>Time</th><th>Computer</th><th>User</th><th>Website</th><th>Security</th></tr></thead>
+      <tbody id="visits-body" data-columns="dashboard" data-max-rows="8" data-active="1"
+             data-last-id="{{ last_id }}" data-status="" data-q="">
+      {% for v in visits %}
+        <tr data-id="{{ v.id }}">
+          <td class="mono nowrap" title="{{ v.visited_at }}">{{ v.time_label }}</td>
+          <td>{{ v.computer_name }}</td>
+          <td>{{ v.username or '-' }}</td>
+          <td class="domain">{{ v.domain }}</td>
+          <td><span class="badge badge-{{ v.reputation_status|lower }}" title="{{ v.status_hint }}">{{ v.status_label }}</span></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
   <p class="empty" id="visits-empty" {% if visits %}hidden{% endif %}>
-    No website visits recorded yet. Once a computer sends its first visit, it will appear here automatically.
+    No browsing activity yet today. Once a monitored computer opens a website, it appears here automatically.
   </p>
 </section>
 {% endblock %}

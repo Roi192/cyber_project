@@ -5,31 +5,41 @@
   <div class="panel-head">
     <h2>Browsing activity</h2>
     <span class="live muted" id="live-indicator">Auto-refresh every 7 s</span>
+  </div>
+
+  <div class="toolbar">
+    <form method="get" action="{{ url_for('browsing') }}" class="search" role="search">
+      <input type="search" id="search" name="q" value="{{ query }}" maxlength="100" autocomplete="off"
+             placeholder="Search website, computer or user" aria-label="Search website, computer or user">
+      {% if active_status %}<input type="hidden" name="status" value="{{ active_status }}">{% endif %}
+    </form>
     <div class="filters">
-      <a class="chip {{ 'active' if not active_status else '' }}" href="{{ url_for('browsing') }}">All</a>
+      <a class="chip {{ 'active' if not active_status else '' }}" href="{{ url_for('browsing', q=query or None) }}">All</a>
       {% for code, label in status_labels.items() %}
       <a class="chip chip-{{ code|lower }} {{ 'active' if active_status == code else '' }}"
-         href="{{ url_for('browsing', status=code) }}">{{ label }}</a>
+         title="{{ status_hints[code] }}" href="{{ url_for('browsing', status=code, q=query or None) }}">{{ label }}</a>
       {% endfor %}
     </div>
   </div>
-  <table class="table" id="visits-table" {% if not visits %}hidden{% endif %}>
-    <thead><tr><th>Time</th><th>Computer</th><th>User</th><th>Website</th><th>Page</th><th>Browser</th><th>Status</th></tr></thead>
-    <tbody id="visits-body" data-columns="browsing" data-max-rows="200"
-           data-last-id="{{ visits[0].id if visits else 0 }}" data-status="{{ active_status or '' }}">
-    {% for v in visits %}
-      <tr>
-        <td class="mono">{{ v.visited_at }}</td>
-        <td>{{ v.computer_name }}</td>
-        <td>{{ v.username or '-' }}</td>
-        <td class="domain">{{ v.domain }}</td>
-        <td class="mono path">{{ v.sanitized_url or '-' }}</td>
-        <td>{{ v.browser or '-' }}</td>
-        <td><span class="badge badge-{{ v.reputation_status|lower }}">{{ status_labels[v.reputation_status] }}</span></td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-  <p class="empty" id="visits-empty" {% if visits %}hidden{% endif %}>No visits match this filter yet.</p>
+
+  <div class="table-wrap" id="visits-table" {% if not visits %}hidden{% endif %}>
+    <table class="table">
+      <thead><tr><th>Time</th><th>Computer</th><th>User</th><th>Website</th><th>Browser</th><th>Security</th></tr></thead>
+      <tbody id="visits-body" data-columns="browsing" data-max-rows="200"
+             data-last-id="{{ last_id }}" data-status="{{ active_status or '' }}" data-q="{{ query }}">
+      {% for v in visits %}
+        <tr data-id="{{ v.id }}" data-search="{{ (v.domain ~ ' ' ~ v.computer_name ~ ' ' ~ (v.username or ''))|lower }}">
+          <td class="mono nowrap" title="{{ v.visited_at }}">{{ v.time_label }}</td>
+          <td>{{ v.computer_name }}</td>
+          <td>{{ v.username or '-' }}</td>
+          <td><span class="domain">{{ v.domain }}</span>{% if v.sanitized_url %}<div class="path muted mono" title="{{ v.sanitized_url }}">{{ v.sanitized_url }}</div>{% endif %}</td>
+          <td>{{ v.browser or '-' }}</td>
+          <td><span class="badge badge-{{ v.reputation_status|lower }}" title="{{ v.status_hint }}">{{ v.status_label }}</span></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="empty" id="visits-empty" {% if visits %}hidden{% endif %}>No browsing activity matches the selected filters.</p>
 </section>
 {% endblock %}

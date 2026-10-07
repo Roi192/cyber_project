@@ -176,20 +176,52 @@ def reset_state():
     _provider_cache["provider"] = None
 
 
-def provider_status():
-    """Small dashboard indicator - no provider-health subsystem."""
+UNAVAILABLE_REASON_PREFIX = "Reputation service temporarily unavailable"
+
+# Business-readable text for the dashboard. `detail` (technical, may contain an
+# HTTP code) is only shown inside "Technical details".
+SUMMARY_ACTIVE = "Website reputation checks are running."
+SUMMARY_NOT_CONFIGURED = "Not configured: no reputation service is set up, so websites are shown as Not checked."
+SUMMARY_UNAVAILABLE = ("Temporarily unavailable: the reputation service cannot check new websites right now. "
+                       "They are shown as Not checked until it recovers.")
+
+
+def _recent_failure(conn, now):
+    """Reason of the most recent VirusTotal lookup if it failed and that result is
+    still cached (UNKNOWN entries live 30 min), else None. Unlike the in-process
+    cooldown this survives a server restart, so the status stays truthful."""
+    row = conn.execute(
+        "SELECT reason, expires_at FROM domain_reputation WHERE source = ? ORDER BY checked_at DESC, id DESC LIMIT 1",
+        (VirusTotalProvider.name,),
+    ).fetchone()
+    if row and row["expires_at"] > now.strftime(TIME_FORMAT) and (row["reason"] or "").startswith(UNAVAILABLE_REASON_PREFIX):
+        return row["reason"]
+    return None
+
+
+def provider_status(conn=None):
+    """Small dashboard indicator - no provider-health subsystem.
+    ACTIVE: configured and not failing. TEMPORARILY_UNAVAILABLE (shown to users as
+    "Limited"): configured but in a back-off after an error, or - when `conn` is
+    given - the last cached lookup failed. NOT_CONFIGURED: no VT_API_KEY."""
     if not config.VT_API_KEY:
-        return {"status": STATUS_NOT_CONFIGURED, "provider": None,
+        return {"status": STATUS_NOT_CONFIGURED, "provider": None, "summary": SUMMARY_NOT_CONFIGURED,
                 "detail": "No VT_API_KEY configured - websites are shown as Unknown."}
     now = _now()
     name = VirusTotalProvider.name
     if _in_cooldown(name, now):
         entry = _entry(name)
         remaining = int((entry["unavailable_until"] - now).total_seconds() // 60) + 1
-        return {"status": STATUS_UNAVAILABLE, "provider": name,
+        return {"status": STATUS_UNAVAILABLE, "provider": name, "summary": SUMMARY_UNAVAILABLE,
                 "detail": "%s - next attempt in about %d min. New websites are shown as Unknown meanwhile."
                           % (entry["last_error"], remaining)}
-    return {"status": STATUS_ACTIVE, "provider": name, "detail": "Website reputation checks are running."}
+    if conn is not None:
+        reason = _recent_failure(conn, now)
+        if reason:
+            return {"status": STATUS_UNAVAILABLE, "provider": name, "summary": SUMMARY_UNAVAILABLE,
+                    "detail": "The last reputation check failed: " + reason}
+    return {"status": STATUS_ACTIVE, "provider": name, "summary": SUMMARY_ACTIVE,
+            "detail": "Website reputation checks are running."}
 
 
 # --------------------------------------------------------------------
@@ -252,9 +284,9 @@ def check_domain(conn, domain, provider=None):
         except ProviderError as err:
             # HTTP-level failure the provider understood: back off (no rapid retries on 429/401).
             _record_failure(provider.name, str(err), err.cooldown_minutes, now)
-            result = _result(UNKNOWN, provider.name, "Reputation service temporarily unavailable (%s)." % err)
+            result = _result(UNKNOWN, provider.name, UNAVAILABLE_REASON_PREFIX + " (%s)." % err)
         except Exception:  # any other bug in a provider must never break ingestion
-            result = _result(UNKNOWN, provider.name, "Reputation service temporarily unavailable.")
+            result = _result(UNKNOWN, provider.name, UNAVAILABLE_REASON_PREFIX + ".")
 
     store(conn, domain, result)
     return result
@@ -262,9 +294,18 @@ def check_domain(conn, domain, provider=None):
 
 # Plain-language alert text for the dashboard audience.
 ALERT_SEVERITY = {MALICIOUS: "HIGH", SUSPICIOUS: "MEDIUM"}
+# Deterministic wording. A visit to a bad website does not prove the computer is
+# compromised, and the product neither blocks sites nor remediates, so the text
+# never claims either.
 RECOMMENDED_ACTION = {
-    "HIGH": "Ask the user not to open this website again, run an antivirus scan on the computer, "
-            "and consider blocking the website on your router or firewall.",
-    "MEDIUM": "Ask the user what they were doing on this website and keep an eye on this computer. "
-              "If it repeats, treat it as a real threat.",
+    "HIGH": "Ask the user to close the website and avoid reopening it. If the visit was unexpected, "
+            "contact your IT administrator for further review.",
+    "MEDIUM": "Review whether this website was expected. If not, ask the user to avoid reopening it "
+              "and contact your IT administrator.",
+}
+WHY_IT_MATTERS = {
+    "HIGH": "The reputation service identified this website as potentially malicious. "
+            "Visiting it does not by itself mean the computer is compromised.",
+    "MEDIUM": "The reputation service reported suspicious signals about this website. "
+              "This does not mean it is harmful, only that it should be reviewed.",
 }

@@ -13,6 +13,14 @@ UID_PATTERN = re.compile(r"^[A-Za-z0-9_\-]{1,64}$")
 LABEL_PATTERN = re.compile(r"^(?!-)[a-z0-9-]{1,63}(?<!-)$")
 KNOWN_BROWSERS = ("Chrome", "Edge", "Firefox", "Safari", "Opera", "Brave")
 
+# Navigations the BROWSER makes by itself (not the employee). Each entry is an
+# exact host plus an exact path, so ordinary browsing to the same company
+# (www.msn.com, msn.com/en-us/...) is never affected. Keep this list tiny and
+# add a pattern only after observing it in real traffic. Mirrored in
+# browser_extension/common.js (BROWSER_NOISE).
+#   ntp.msn.com + /edge/ntp  -> the Microsoft Edge "New Tab Page"
+BROWSER_NOISE = (("ntp.msn.com", "/edge/ntp"),)
+
 
 class ValidationError(ValueError):
     pass
@@ -73,6 +81,15 @@ def sanitize_url(value, domain):
     return urlunsplit((parts.scheme, host, path, "", ""))
 
 
+def is_browser_noise(domain, sanitized_url):
+    """True when this visit is a known browser-generated page (see BROWSER_NOISE).
+    Without a URL the path is unknown, so nothing is ever treated as noise."""
+    if not sanitized_url:
+        return False
+    path = urlsplit(sanitized_url).path.rstrip("/")
+    return any(domain == host and path == noise_path for host, noise_path in BROWSER_NOISE)
+
+
 def validate_browser(value):
     value = _text(value, "browser", 50, required=False)
     if value is None:
@@ -99,10 +116,15 @@ def validate_timestamp(value):
 def validate_registration(data):
     if not isinstance(data, dict):
         raise ValidationError("a JSON object is expected")
+    browser = data.get("browser")
     return {
         "endpoint_uid": validate_endpoint_uid(data.get("endpoint_uid")),
         "computer_name": _text(data.get("computer_name"), "computer_name", 100),
         "username": _text(data.get("username"), "username", 100, required=False),
+        # when the client sends a "username" key (even empty) it is authoritative,
+        # so the label can be changed or cleared; when absent the stored one is kept
+        "username_provided": "username" in data,
+        "browser": validate_browser(browser) if browser not in (None, "") else None,
     }
 
 
@@ -110,12 +132,16 @@ def validate_web_event(data):
     if not isinstance(data, dict):
         raise ValidationError("a JSON object is expected")
     domain = normalize_domain(data.get("domain"))
-    return {
+    event = {
         "endpoint_uid": validate_endpoint_uid(data.get("endpoint_uid")),
         "computer_name": _text(data.get("computer_name"), "computer_name", 100),
         "username": _text(data.get("username"), "username", 100, required=False),
+        "username_provided": "username" in data,
         "domain": domain,
         "sanitized_url": sanitize_url(data.get("url"), domain),
         "browser": validate_browser(data.get("browser")),
         "visited_at": validate_timestamp(data.get("timestamp")),
     }
+    # "Other" means "not reported" - do not overwrite a known browser with it
+    event["endpoint_browser"] = event["browser"] if event["browser"] != "Other" else None
+    return event

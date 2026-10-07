@@ -8,17 +8,21 @@
     {% for a in alerts %}
     <article class="alert-card severity-{{ a.severity|lower }} {{ 'closed' if a.status == 'CLOSED' else '' }}">
       <div class="alert-top">
-        <span class="badge badge-sev-{{ a.severity|lower }}">{{ 'High risk' if a.severity == 'HIGH' else 'Medium risk' }}</span>
-        <span class="alert-status">{{ 'Open' if a.status == 'OPEN' else 'Closed' }}</span>
-        <span class="mono alert-time">{{ a.created_at }}</span>
+        <span class="badge badge-sev-{{ a.severity|lower }}">{{ 'Dangerous' if a.severity == 'HIGH' else 'Needs review' }}</span>
+        <span class="alert-status">{{ 'Open' if a.status == 'OPEN' else 'Handled' }}</span>
       </div>
-      <p class="alert-headline">
-        <strong>{{ a.computer_name }}</strong>{% if a.username %} ({{ a.username }}){% endif %}
-        visited <strong class="domain">{{ a.domain }}</strong>,
-        a website identified as {{ 'malicious' if a.severity == 'HIGH' else 'suspicious' }}.
-      </p>
-      <p class="alert-reason">{{ a.reason }}</p>
-      <p class="alert-action"><strong>Recommended action:</strong> {{ actions[a.severity] }}</p>
+      <h3 class="alert-headline">{{ a.title|upper }}</h3>
+      <dl class="alert-facts">
+        <div><dt>Computer</dt><dd>{{ a.computer_name }}</dd></div>
+        <div><dt>User</dt><dd>{{ a.username or '-' }}</dd></div>
+        <div><dt>Website</dt><dd class="domain">{{ a.domain }}</dd></div>
+        <div><dt>Detected</dt><dd class="mono" title="{{ a.created_at }}">{{ a.detected_label }}</dd></div>
+      </dl>
+      <p class="alert-why"><strong>Why this matters:</strong> {{ a.why }}</p>
+      <p class="alert-action"><strong>Recommended action:</strong> {{ a.action }}</p>
+      <details class="tech"><summary>Technical details</summary>
+        <div class="muted">{{ a.reason }}</div>
+      </details>
       {% if a.status == 'OPEN' %}
       <form method="post" action="{{ url_for('close_alert', alert_id=a.id) }}" class="inline-form">
         <button type="submit" class="btn">Mark as handled</button>
@@ -28,7 +32,10 @@
     {% endfor %}
   </div>
   {% else %}
-  <p class="empty">No alerts. No computer has visited a dangerous website.</p>
+  <div class="empty-state">
+    <div class="empty-title">No security alerts</div>
+    <p class="empty">No suspicious or dangerous website visits currently require your attention.</p>
+  </div>
   {% endif %}
 </section>
 {% endblock %}

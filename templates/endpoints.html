@@ -2,24 +2,55 @@
 {% block title %}Computers - Website Monitor{% endblock %}
 {% block content %}
 <section class="panel">
-  <div class="panel-head"><h2>Monitored computers</h2></div>
-  {% if endpoints %}
-  <table class="table">
-    <thead><tr><th>Computer</th><th>User</th><th>Last seen</th><th>Websites recorded</th><th>Open alerts</th></tr></thead>
-    <tbody>
-    {% for e in endpoints %}
-      <tr>
-        <td><strong>{{ e.computer_name }}</strong><div class="muted mono">{{ e.endpoint_uid }}</div></td>
-        <td>{{ e.username or '-' }}</td>
-        <td class="mono">{{ e.last_seen }}</td>
-        <td>{{ e.visit_count }}</td>
-        <td>{% if e.open_alerts %}<span class="badge badge-sev-high">{{ e.open_alerts }}</span>{% else %}0{% endif %}</td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <p class="empty">No computers have registered yet.</p>
+  <div class="panel-head">
+    <h2>{% if show_archived %}Archived computers{% else %}Monitored computers{% endif %}</h2>
+    <span class="live muted" id="live-indicator">Auto-refresh every 7 s</span>
+    {% if show_archived %}
+    <a class="link" href="{{ url_for('endpoints') }}">Back to monitored computers</a>
+    {% elif archived_count %}
+    <a class="link" href="{{ url_for('endpoints', archived='1') }}">Show archived ({{ archived_count }})</a>
+    {% endif %}
+  </div>
+  {% if show_archived %}
+  <p class="muted">Archived computers are hidden from the dashboard counts. Their browsing history and alerts are kept.
+    A computer that connects again is restored automatically.</p>
   {% endif %}
+  <div class="table-wrap" id="endpoints-table" {% if not endpoints %}hidden{% endif %}>
+    <table class="table">
+      <thead>
+        <tr><th>Computer</th><th>User</th><th>Browser</th><th>Status</th><th>Last seen</th><th>Websites today</th><th>Security issues today</th></tr>
+      </thead>
+      <tbody id="endpoints-body" data-archived="{{ '1' if show_archived else '' }}">
+      {% for e in endpoints %}
+        <tr data-endpoint-id="{{ e.id }}">
+          <td>
+            <strong>{{ e.computer_name }}</strong>
+            <details class="tech"><summary>Technical details</summary>
+              <div class="muted mono">Installation ID: {{ e.endpoint_uid }}</div>
+              <div class="muted mono">Last seen: {{ e.last_seen }}</div>
+              <form method="post" class="inline-form"
+                    action="{{ url_for('restore_endpoint' if show_archived else 'archive_endpoint', endpoint_id=e.id) }}">
+                {% if show_archived %}<input type="hidden" name="view" value="archived">{% endif %}
+                <button type="submit" class="btn btn-small btn-quiet">{{ 'Restore this computer' if show_archived else 'Archive this computer' }}</button>
+              </form>
+              {% if not show_archived %}
+              <div class="muted">Archiving hides it from this page and the dashboard counts. Nothing is deleted.</div>
+              {% endif %}
+            </details>
+          </td>
+          <td data-field="username">{{ e.username or '-' }}</td>
+          <td data-field="browser">{{ e.browser or '-' }}</td>
+          <td data-field="status"><span class="badge badge-{{ e.status|lower }}">{{ 'Online' if e.status == 'ONLINE' else 'Offline' }}</span></td>
+          <td class="nowrap" data-field="last_seen_relative" title="{{ e.last_seen }}">{{ e.last_seen_relative }}</td>
+          <td data-field="websites_today">{{ e.websites_today }}</td>
+          <td data-field="threats_today">{% if e.threats_today %}<span class="badge badge-sev-high">{{ e.threats_today }}</span>{% else %}0{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="empty" id="endpoints-empty" {% if endpoints %}hidden{% endif %}>
+    {% if show_archived %}No archived computers.{% else %}No monitored computers have been enrolled yet. Install the browser extension on a computer and enter this server's address in its options.{% endif %}
+  </p>
 </section>
 {% endblock %}
