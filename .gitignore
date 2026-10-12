@@ -1,4 +1,6 @@
 .env
+.env.before-*
+.env.tmp
 venv/
 .venv/
 __pycache__/
@@ -15,3 +17,8 @@ data/*.db-*
 
 # deployment archives built by deploy/build_package.py
 dist/
+
+# agent configuration with the real key and the generated identity: never commit
+agent/agent.env
+agent/agent_state.json
+agent/*.tmp

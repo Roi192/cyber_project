@@ -1,41 +1,27 @@
 {% extends "base.html" %}
 {% block title %}Dashboard - Website Monitor{% endblock %}
+{% macro period_selector(days, label) %}
+<fieldset class="period" id="period-select" aria-label="{{ label }}">
+  <legend class="visually-hidden">{{ label }}</legend>
+  {% for value in (7, 14, 30) %}
+  <label class="period-option"><input type="radio" name="period" value="{{ value }}" {% if value == days %}checked{% endif %}><span>Last {{ value }} days</span></label>
+  {% endfor %}
+</fieldset>
+{% endmacro %}
 {% block content %}
+{% include "_chart_defs.html" %}
 <section class="status-hero status-{{ overview.css }}" id="security-status">
   <div class="status-label">Security status</div>
   <div class="status-value">{{ overview.title }}</div>
   <p class="status-hint">{{ overview.message }}</p>
   <p class="status-affected" {% if not overview.affected %}hidden{% endif %}>{{ overview.affected }}</p>
   <p class="status-coverage">{{ overview.coverage_line }}</p>
+  <details class="status-scope-details"><summary>What this status covers</summary><p class="status-scope muted">{{ overview.scope_note }}</p></details>
   <a class="btn" id="status-action" href="{{ overview.action.url }}">{{ overview.action.label }}</a>
 </section>
 
-<section class="tiles">
-  <div class="tile">
-    <div class="tile-label">Monitored computers</div>
-    <div class="tile-value" data-stat="computers">{{ summary.computers }}</div>
-  </div>
-  <div class="tile">
-    <div class="tile-label">Online now</div>
-    <div class="tile-value" data-stat="online_now">{{ summary.online_now }}</div>
-  </div>
-  <div class="tile">
-    <div class="tile-label">Websites visited today</div>
-    <div class="tile-value" data-stat="visits_today">{{ summary.visits_today }}</div>
-  </div>
-  <div class="tile {{ 'tile-danger' if summary.threats_today else '' }}">
-    <div class="tile-label">Threats detected today</div>
-    <div class="tile-value" data-stat="threats_today">{{ summary.threats_today }}</div>
-  </div>
-  <div class="tile">
-    <div class="tile-label">Reputation coverage</div>
-    <div class="tile-value" data-stat="coverage_value">{% if overview.coverage.percent is none %}&ndash;{% else %}{{ overview.coverage.percent }}%{% endif %}</div>
-    <div class="tile-sub" data-stat="coverage_sub">{% if overview.coverage.total %}{{ overview.coverage.evaluated }} of {{ overview.coverage.total }} checked{% else %}No browsing yet today{% endif %}</div>
-  </div>
-</section>
-
-<section class="panel" id="attention-panel">
-  <div class="panel-head"><h2>Needs attention</h2></div>
+<section class="panel" id="attention-panel" aria-labelledby="attention-title">
+  <div class="panel-head"><h2 id="attention-title">Needs attention</h2><a class="link" href="{{ url_for('alerts') }}">Open alerts</a></div>
   <ul class="attention-list" id="attention-list" {% if not overview.attention %}hidden{% endif %}>
     {% for item in overview.attention %}
     <li class="attention-item level-{{ item.level }}">
@@ -44,15 +30,72 @@
     {% endfor %}
   </ul>
   <p class="empty" id="attention-empty" {% if overview.attention %}hidden{% endif %}>No issues currently require your attention.</p>
-  <div class="ti-row ti-{{ threat_intel.status|lower }}" id="ti-row">
-    <strong>Threat intelligence:</strong>
-    <span class="ti-row-label">{{ threat_intel.label }}</span>
-    <span class="ti-row-detail muted">{{ threat_intel.summary }}</span>
-    <details class="tech"><summary>Technical details</summary>
-      <div class="muted mono ti-row-tech">{{ threat_intel.detail }}</div>
-    </details>
-  </div>
 </section>
+
+<section class="exec" id="exec-root" data-days="{{ days }}" data-summary-url="{{ url_for('analytics.api_summary') }}"
+         data-trends-url="{{ url_for('analytics.api_trends') }}" data-computers-url="{{ url_for('analytics.api_computers') }}"
+         data-detail-base="{{ url_for('dashboard') }}computers/" aria-labelledby="exec-title">
+  <div class="exec-head">
+    <div>
+      <h2 id="exec-title">What changed</h2>
+      <p class="muted exec-sub">Websites opened on monitored computers, as judged by a reputation service.</p>
+    </div>
+    {{ period_selector(days, "Reporting period") }}
+  </div>
+  <div class="visually-hidden" role="status" aria-live="polite" id="exec-announce"></div>
+  <div class="exec-notice" id="exec-notice" hidden></div>
+
+  <div class="kpi-grid" id="kpi-grid" aria-busy="true">
+    <article class="kpi" data-kpi="malicious"><h3>Dangerous website visits</h3><p class="kpi-value">&ndash;</p><p class="kpi-sub"></p><p class="kpi-compare"></p></article>
+    <article class="kpi" data-kpi="suspicious"><h3>Suspicious website visits</h3><p class="kpi-value">&ndash;</p><p class="kpi-sub"></p><p class="kpi-compare"></p></article>
+    <article class="kpi" data-kpi="exposed"><h3>Computers with risky websites</h3><p class="kpi-value">&ndash;</p><p class="kpi-sub"></p><p class="kpi-compare"></p></article>
+    <article class="kpi" data-kpi="reporting"><h3>Computers reporting now</h3><p class="kpi-value">&ndash;</p><p class="kpi-sub"></p><p class="kpi-compare"></p></article>
+    <article class="kpi" data-kpi="coverage"><h3>Monitoring incomplete</h3><p class="kpi-value">&ndash;</p><p class="kpi-sub"></p><p class="kpi-compare"></p></article>
+    <article class="kpi" data-kpi="computers"><h3>Monitored computers</h3><p class="kpi-value">&ndash;</p><p class="kpi-sub"></p><p class="kpi-compare"></p></article>
+  </div>
+  <div class="exec-error" id="kpi-error" role="alert" hidden></div>
+
+  <section class="panel" id="risk-panel" aria-labelledby="risk-title">
+    <div class="panel-head">
+      <h2 id="risk-title">Computers needing attention</h2>
+      <a class="link" href="{{ url_for('endpoints') }}">All computers</a>
+    </div>
+    <p class="muted risk-intro">Web exposure is about the websites a computer opened, not proof that it is infected. Monitoring status is shown separately.</p>
+    <div class="table-wrap">
+      <table class="table risk-table" id="risk-table" hidden>
+        <caption class="visually-hidden">Computers ordered by observed web exposure</caption>
+        <thead><tr><th scope="col">Computer</th><th scope="col">Web exposure</th><th scope="col">Risky website visits</th><th scope="col">Monitoring</th></tr></thead>
+        <tbody id="risk-body"></tbody>
+      </table>
+    </div>
+    <p class="empty" id="risk-empty" hidden></p>
+    <button type="button" class="btn btn-small btn-quiet" id="risk-more" hidden></button>
+    <div class="exec-error" id="risk-error" role="alert" hidden></div>
+  </section>
+
+  <div class="exec-grid">
+    <section class="panel chart-panel" aria-labelledby="trend-title">
+      <div class="panel-head">
+        <h2 id="trend-title">Website activity per day</h2>
+        <button type="button" class="btn btn-small btn-quiet" id="trend-toggle" aria-pressed="false" aria-controls="trend-table-wrap">Show as table</button>
+      </div>
+      <div class="chart-legend" id="trend-legend" aria-label="Chart legend">
+        <span class="legend-item"><svg class="legend-swatch" viewBox="0 0 14 14" aria-hidden="true"><rect width="14" height="14" rx="2" class="bar-malicious"></rect></svg>Dangerous</span>
+        <span class="legend-item"><svg class="legend-swatch" viewBox="0 0 14 14" aria-hidden="true"><rect width="14" height="14" rx="2" class="bar-suspicious"></rect></svg>Needs review</span>
+        <span class="legend-item"><svg class="legend-swatch" viewBox="0 0 14 14" aria-hidden="true"><rect width="14" height="14" rx="2" class="bar-unknown" style="fill:url(#dots-unknown)"></rect></svg>Could not be checked</span>
+        <span class="legend-item"><svg class="legend-swatch" viewBox="0 0 14 14" aria-hidden="true"><rect width="14" height="14" rx="2" class="bar-safe"></rect></svg>No threat detected</span>
+        <span class="legend-item"><svg class="legend-swatch" viewBox="0 0 14 14" aria-hidden="true"><rect width="14" height="14" rx="2" class="bar-nodata" style="fill:url(#hatch-nodata)"></rect></svg>Before monitoring began</span>
+      </div>
+      <div class="chart-box" id="trend-chart" aria-busy="true"><p class="muted chart-loading">Loading&hellip;</p></div>
+      <div class="chart-tooltip" id="trend-tooltip" role="tooltip" hidden></div>
+      <div class="table-wrap" id="trend-table-wrap" hidden></div>
+      <p class="muted chart-note" id="trend-note"></p>
+      <div class="exec-error" id="trend-error" role="alert" hidden></div>
+    </section>
+  </div>
+
+</section>
+
 
 <section class="panel">
   <div class="panel-head">
@@ -62,16 +105,17 @@
   </div>
   <div class="table-wrap" id="visits-table" {% if not visits %}hidden{% endif %}>
     <table class="table">
-      <thead><tr><th>Time</th><th>Computer</th><th>User</th><th>Website</th><th>Security</th></tr></thead>
+      <thead><tr><th>Time</th><th>Computer</th><th>User</th><th>Website</th><th>Activity</th><th>Security</th></tr></thead>
       <tbody id="visits-body" data-columns="dashboard" data-max-rows="8" data-active="1"
              data-last-id="{{ last_id }}" data-status="" data-q="">
       {% for v in visits %}
-        <tr data-id="{{ v.id }}">
+        <tr data-id="{{ v.id }}" data-key="{{ v.logical_id }}">
           <td class="mono nowrap" title="{{ v.visited_at }}">{{ v.time_label }}</td>
           <td>{{ v.computer_name }}</td>
           <td>{{ v.username or '-' }}</td>
-          <td class="domain">{{ v.domain }}</td>
-          <td><span class="badge badge-{{ v.reputation_status|lower }}" title="{{ v.status_hint }}">{{ v.status_label }}</span></td>
+          <td class="domain">{{ v.domain }}{% if v.is_ip_only %}<div class="muted src">IP address only (website unknown)</div>{% endif %}</td>
+          <td class="activity activity-{{ v.source|lower }}" title="{{ v.observation_hint }}">{{ v.observation_label }}{% if v.has_process %}<div class="muted src" title="{{ v.process_kind_hint }}{% if v.pid %} Process ID {{ v.pid }} (temporary: it changes whenever the program restarts).{% endif %}">{{ v.process_label }} &middot; {{ v.process_kind_label }}</div>{% endif %}{% if v.supporting_sources %}<div class="muted src" title="The browser history recorded the same visit. It is counted once.">+ also in {{ v.supporting_sources|join(', ')|lower }}</div>{% endif %}</td>
+          <td><span class="badge badge-{{ v.reputation_status|lower }}" title="{{ v.status_hint }}">{{ v.status_label }}</span>{% if v.analysis_summary %}<div class="muted src">{{ v.analysis_summary }}</div>{% endif %}{% if v.risk_score is not none %}<div class="src"><span class="risk-pill risk-{{ v.risk_band }}" title="{{ v.risk_coverage }}. {{ score_tooltip }}">Risk {{ v.risk_score }} &middot; {{ v.risk_label }}</span></div>{% endif %}{% if not v.is_ip_only %}<div class="src"><a class="link" href="{{ url_for('visit_detail', visit_id=v.id) }}">View analysis</a></div>{% endif %}</td>
         </tr>
       {% endfor %}
       </tbody>
@@ -81,4 +125,133 @@
     No browsing activity yet today. Once a monitored computer opens a website, it appears here automatically.
   </p>
 </section>
+<section class="panel" id="sources-panel" aria-labelledby="sources-title">
+  <div class="panel-head"><h2 id="sources-title">Threat-intelligence sources</h2><span class="muted">keys are never shown</span></div>
+  <p class="source-counts" id="source-counts"><strong>{{ source_counts.operational }} of {{ source_counts.total }}</strong> sources are operational (their latest lookup succeeded)
+    &middot; {{ source_counts.enabled_not_yet_answered }} enabled, no answer yet &middot; {{ source_counts.unavailable }} unavailable (error or rate limit)
+    &middot; {{ source_counts.configured_off }} configured but off &middot; {{ source_counts.not_configured }} not configured.</p>
+  <div class="table-wrap">
+    <table class="table" id="sources-table">
+      <thead><tr><th>Source</th><th>Configured</th><th>Enabled</th><th>Status</th><th>Last successful lookup</th><th>What it means</th></tr></thead>
+      <tbody>
+      {% for s in sources %}
+        <tr data-source="{{ s.name }}">
+          <td><strong>{{ s.name }}</strong>{% if s.role != 'scoring' %} <span class="role-chip role-{{ s.role|replace(' ', '-') }}">{{ s.role }}</span>{% endif %}<div class="muted src mono" title="The variables in .env that control this source">{{ s.controls }}</div></td>
+          <td>{{ 'yes' if s.configured else 'no' }}</td>
+          <td>{{ 'yes' if s.enabled else 'no' }}</td>
+          <td><span class="source-chip source-{{ s.status|lower|replace(' ', '-') }}" title="{{ s.can_tell }}">{{ s.status }}</span></td>
+          <td class="mono">{{ s.last_success_at or '-' }}</td>
+          <td class="muted">{{ s.detail }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">A source that is off, missing its key, rate limited or failing is never counted as a clean result: its answer is shown as not checked. NOT CONFIGURED = a key is missing &middot; CONFIGURED = present but switched off &middot; ENABLED = on, no lookup has succeeded yet &middot; OPERATIONAL = its latest lookup succeeded &middot; RETIRED = no longer asked (history only). Observation-only sources are shown but do not change verdicts, scores or alerts.</p>
+</section>
+<section class="panel" id="risky-panel" aria-labelledby="risky-title">
+  <div class="panel-head"><h2 id="risky-title">Most recent risky visits</h2><span class="muted">risk score 40 or more</span><a class="link" href="{{ url_for('browsing') }}?status=SUSPICIOUS">See all</a></div>
+  {% if risky %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Time</th><th>Computer</th><th>Website</th><th>Risk score</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for v in risky %}
+        <tr>
+          <td class="mono nowrap" title="{{ v.visited_at }}">{{ v.time_label }}</td>
+          <td>{{ v.computer_name }}</td>
+          <td class="domain">{{ v.domain }}</td>
+          <td><span class="risk-pill risk-{{ v.risk_band }}" title="{{ v.risk_coverage }}. {{ score_tooltip }}">Risk {{ v.risk_score }} &middot; {{ v.risk_label }}</span></td>
+          <td><span class="badge badge-{{ v.reputation_status|lower }}" title="{{ v.status_hint }}">{{ v.status_label }}</span> <a class="link" href="{{ url_for('visit_detail', visit_id=v.id) }}">View analysis</a></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="empty">No recent visit has a risk score of 40 or more. A low score is not a promise that a website is safe: it only means the sources that answered reported nothing.</p>
+  {% endif %}
+</section>
+<section class="panel" id="alerts-by-computer" aria-labelledby="abc-title">
+  <div class="panel-head"><h2 id="abc-title">Open alerts by computer</h2><a class="link" href="{{ url_for('alerts') }}">Open alerts</a></div>
+  {% if alerts_by_computer %}
+  <table class="table">
+    <thead><tr><th>Computer</th><th>Open alerts</th><th>Dangerous</th></tr></thead>
+    <tbody>{% for e in alerts_by_computer %}<tr><td>{{ e.computer }}</td><td>{{ e.open }}</td><td>{{ e.high }}</td></tr>{% endfor %}</tbody>
+  </table>
+  {% else %}
+  <p class="empty">No computer has an open alert.</p>
+  {% endif %}
+</section>
+<details class="glance" id="today-glance">
+  <summary>Technical details: today's counts, threat intelligence, network activity</summary>
+  <h3 class="tech-h">Today at a glance</h3>
+  <section class="tiles">
+    <div class="tile">
+      <div class="tile-label">Monitored computers</div>
+      <div class="tile-value" data-stat="computers">{{ summary.computers }}</div>
+      <div class="tile-sub" data-stat="computers_sub">{{ summary.sensors }} {{ 'sensor' if summary.sensors == 1 else 'sensors' }} in total{% if summary.unverified_computers %} &middot; {{ summary.unverified_computers }} {{ 'computer has' if summary.unverified_computers == 1 else 'computers have' }} an unconfirmed identity{% endif %}{% if summary.self_enrolled_computers %} &middot; {{ summary.self_enrolled_computers }} self-enrolled (not administrator-approved){% endif %}</div>
+    </div>
+    <div class="tile">
+      <div class="tile-label">Online now</div>
+      <div class="tile-value" data-stat="online_now">{{ summary.online_now }}</div>
+      <div class="tile-sub" data-stat="online_sub">{{ summary.computers - summary.online_now }} offline &middot; {{ summary.sensors_online }} of {{ summary.sensors }} sensors online</div>
+    </div>
+    <div class="tile">
+      <div class="tile-label">Websites visited today</div>
+      <div class="tile-value" data-stat="visits_today">{{ summary.visits_today }}</div>
+    </div>
+    <div class="tile" id="contacted-card" {% if not (summary.agents_enrolled or summary.contacted_today) %}hidden{% endif %}>
+      <div class="tile-label">Domains seen by the agent today</div>
+      <div class="tile-value" data-stat="contacted_today">{{ summary.contacted_today }}</div>
+      <div class="tile-sub">domain lookups reported by the network agent, not website visits. Program activity is listed under Network activity.</div>
+    </div>
+    <div class="tile {{ 'tile-danger' if summary.threats_today else '' }}">
+      <div class="tile-label">Threats detected today</div>
+      <div class="tile-value" data-stat="threats_today">{{ summary.threats_today }}</div>
+    </div>
+    <div class="tile">
+      <div class="tile-label">Reputation coverage</div>
+      <div class="tile-value" data-stat="coverage_value">{% if overview.coverage.percent is none %}&ndash;{% else %}{{ overview.coverage.percent }}%{% endif %}</div>
+      <div class="tile-sub" data-stat="coverage_sub">{% if overview.coverage.total %}{{ overview.coverage.evaluated }} of {{ overview.coverage.total }} checked{% else %}No browsing yet today{% endif %}</div>
+    </div>
+  </section>
+  <h3 class="tech-h">Threat intelligence</h3>
+  <div class="ti-row ti-{{ threat_intel.status|lower }}" id="ti-row">
+    <strong>Threat intelligence:</strong>
+    <span class="ti-row-label">{{ threat_intel.label }}</span>
+    <span class="ti-row-detail muted">{{ threat_intel.summary }}</span>
+    <details class="tech"><summary>Technical details</summary>
+      <div class="muted mono ti-row-tech">{{ threat_intel.detail }}</div>
+    </details>
+  </div>
+  {% if network_activity %}
+<section class="panel" id="network-activity">
+  <div class="panel-head">
+    <h2>Network activity</h2>
+    <span class="muted">programs that connected today (not website history)</span>
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Computer</th><th>Program</th><th>Kind</th><th>Connections today</th><th>Last</th></tr></thead>
+      <tbody>
+      {% for a in network_activity %}
+        <tr>
+          <td>{{ a.computer_name }}</td>
+          <td>{{ a.process_label }}</td>
+          <td class="muted" title="{{ a.process_kind_hint }}">{{ a.process_kind_label }}</td>
+          <td>{{ a.connections }}</td>
+          <td class="mono nowrap">{{ a.last_seen_label }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">Raw activity seen by the network agent: only a daily count per program is kept, never the address. It does not show which websites were opened.</p>
+</section>
+
+{% endif %}
+</details>
+
 {% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/executive.js') }}"></script>{% endblock %}

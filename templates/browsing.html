@@ -14,27 +14,41 @@
       {% if active_status %}<input type="hidden" name="status" value="{{ active_status }}">{% endif %}
     </form>
     <div class="filters">
-      <a class="chip {{ 'active' if not active_status else '' }}" href="{{ url_for('browsing', q=query or None) }}">All</a>
+      <a class="chip {{ 'active' if not active_status else '' }}" href="{{ url_for('browsing', q=query or None, source=active_source) }}">All</a>
       {% for code, label in status_labels.items() %}
       <a class="chip chip-{{ code|lower }} {{ 'active' if active_status == code else '' }}"
-         title="{{ status_hints[code] }}" href="{{ url_for('browsing', status=code, q=query or None) }}">{{ label }}</a>
+         title="{{ status_hints[code] }}" href="{{ url_for('browsing', status=code, q=query or None, source=active_source) }}">{{ label }}</a>
       {% endfor %}
     </div>
   </div>
+  {% if show_sources %}
+  <div class="toolbar source-filter">
+    <span class="muted">Source:</span>
+    <div class="filters">
+      <a class="chip {{ 'active' if not active_source else '' }}" href="{{ url_for('browsing', status=active_status, q=query or None) }}">All sources</a>
+      {% for code, label in source_labels.items() %}
+      <a class="chip {{ 'active' if active_source == code else '' }}"
+         href="{{ url_for('browsing', status=active_status, q=query or None, source=code) }}">{{ label }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
 
   <div class="table-wrap" id="visits-table" {% if not visits %}hidden{% endif %}>
     <table class="table">
-      <thead><tr><th>Time</th><th>Computer</th><th>User</th><th>Website</th><th>Browser</th><th>Security</th></tr></thead>
+      <thead><tr><th>Time</th><th>Computer</th><th>User</th><th>Website</th><th>Browser</th><th>Activity</th><th>Security</th></tr></thead>
       <tbody id="visits-body" data-columns="browsing" data-max-rows="200"
-             data-last-id="{{ last_id }}" data-status="{{ active_status or '' }}" data-q="{{ query }}">
+             data-last-id="{{ last_id }}" data-status="{{ active_status or '' }}" data-q="{{ query }}"
+             data-source="{{ active_source or '' }}" data-physical="{{ '1' if physical else '' }}">
       {% for v in visits %}
-        <tr data-id="{{ v.id }}" data-search="{{ (v.domain ~ ' ' ~ v.computer_name ~ ' ' ~ (v.username or ''))|lower }}">
+        <tr data-id="{{ v.id }}" data-key="{{ v.logical_id }}" data-search="{{ (v.domain ~ ' ' ~ v.computer_name ~ ' ' ~ (v.username or '') ~ ' ' ~ (v.process_name or ''))|lower }}">
           <td class="mono nowrap" title="{{ v.visited_at }}">{{ v.time_label }}</td>
           <td>{{ v.computer_name }}</td>
           <td>{{ v.username or '-' }}</td>
-          <td><span class="domain">{{ v.domain }}</span>{% if v.sanitized_url %}<div class="path muted mono" title="{{ v.sanitized_url }}">{{ v.sanitized_url }}</div>{% endif %}</td>
+          <td><span class="domain">{{ v.domain }}</span>{% if v.is_ip_only %}<div class="muted src">IP address only (website unknown)</div>{% endif %}{% if v.sanitized_url %}<div class="path muted mono" title="{{ v.sanitized_url }}">{{ v.sanitized_url }}</div>{% endif %}</td>
           <td>{{ v.browser or '-' }}</td>
-          <td><span class="badge badge-{{ v.reputation_status|lower }}" title="{{ v.status_hint }}">{{ v.status_label }}</span></td>
+          <td class="activity activity-{{ v.source|lower }}" title="{{ v.observation_hint }}">{{ v.observation_label }}{% if v.has_process %}<div class="muted src" title="{{ v.process_kind_hint }}{% if v.pid %} Process ID {{ v.pid }} (temporary: it changes whenever the program restarts).{% endif %}">{{ v.process_label }} &middot; {{ v.process_kind_label }}</div>{% endif %}<div class="muted src">{{ v.source_label }}</div>{% if v.supporting_sources %}<div class="muted src" title="The browser history recorded the same visit. It is counted once.">+ also in {{ v.supporting_sources|join(', ')|lower }}</div>{% endif %}</td>
+          <td><span class="badge badge-{{ v.reputation_status|lower }}" title="{{ v.status_hint }}">{{ v.status_label }}</span>{% if v.analysis_summary %}<div class="muted src">{{ v.analysis_summary }}</div>{% endif %}{% if v.risk_score is not none %}<div class="src"><span class="risk-pill risk-{{ v.risk_band }}" title="{{ v.risk_coverage }}. {{ score_tooltip }}">Risk {{ v.risk_score }} &middot; {{ v.risk_label }}</span></div>{% endif %}{% if not v.is_ip_only %}<div class="src"><a class="link" href="{{ url_for('visit_detail', visit_id=v.id) }}">View analysis</a></div>{% endif %}</td>
         </tr>
       {% endfor %}
       </tbody>

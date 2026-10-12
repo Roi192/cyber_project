@@ -48,6 +48,14 @@
   </div>
   <div id="result" class="result" hidden></div>
 
+  <h3>Pair with this computer's Windows Agent</h3>
+  <p class="hint" id="pair_state"></p>
+  <p class="hint">If the Windows Agent is installed on this computer, pairing makes this browser a sensor of that one computer, so it is not counted as a separate computer. On this computer run <span class="mono">windows_agent.py pair-code</span>, then type the code it prints here. Pairing needs your approval (the code) every time; nothing is paired automatically.</p>
+  <label for="pair_code">Pairing code</label>
+  <input type="text" id="pair_code" maxlength="12" placeholder="XXXX-XXXX" autocomplete="off">
+  <div class="row"><button id="pair" class="secondary">Pair with the Windows Agent</button></div>
+  <div id="pair_result" class="result" hidden></div>
+
   <details>
     <summary>Technical details</summary>
     <p>Installation ID (generated once, never changes unless the extension is removed and installed again, which counts as a new computer):</p>

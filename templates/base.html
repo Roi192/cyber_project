@@ -3,10 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="app-root" content="{{ request.script_root }}">
   <title>{% block title %}Website Monitor{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to main content</a>
   <header class="topbar">
     <div class="brand">
       <span class="brand-mark" aria-hidden="true"></span>
@@ -16,15 +19,23 @@
       <span class="ti-pill ti-{{ threat_intel.status|lower }}" id="ti-pill" title="{{ threat_intel.summary }}">
         Threat intelligence: <span class="ti-pill-label">{{ threat_intel.label }}</span>
       </span>
-      <nav class="nav">
-        <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' else '' }}">Dashboard</a>
-        <a href="{{ url_for('browsing') }}" class="{{ 'active' if request.endpoint == 'browsing' else '' }}">Browsing</a>
-        <a href="{{ url_for('alerts') }}" class="{{ 'active' if request.endpoint == 'alerts' else '' }}">Alerts</a>
-        <a href="{{ url_for('endpoints') }}" class="{{ 'active' if request.endpoint == 'endpoints' else '' }}">Computers</a>
+      <nav class="nav" aria-label="Main">
+        <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' else '' }}"{% if request.endpoint == 'dashboard' %} aria-current="page"{% endif %}>Dashboard</a>
+        <a href="{{ url_for('browsing') }}" class="{{ 'active' if request.endpoint == 'browsing' else '' }}"{% if request.endpoint == 'browsing' %} aria-current="page"{% endif %}>Browsing</a>
+        <a href="{{ url_for('alerts') }}" class="{{ 'active' if request.endpoint == 'alerts' else '' }}"{% if request.endpoint == 'alerts' %} aria-current="page"{% endif %}>Alerts</a>
+        <a href="{{ url_for('endpoints') }}" class="{{ 'active' if request.endpoint in ('endpoints', 'computer_detail') else '' }}"{% if request.endpoint in ('endpoints', 'computer_detail') %} aria-current="page"{% endif %}>Computers</a>
       </nav>
+      {% if current_user.is_authenticated %}
+      <form method="post" action="{{ url_for('auth.logout') }}" class="inline-form signout">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <span class="whoami" title="Signed in as {{ current_user.username }}">{{ current_user.username }}</span>
+        <button type="submit" class="btn btn-small btn-quiet">Sign out</button>
+      </form>
+      {% endif %}
     </div>
   </header>
 
+  {% if demo_banner %}<div class="demo-bar" role="note"><strong>{{ demo_banner }}</strong></div>{% endif %}
   <div class="dev-bar" id="dev-bar" {% if not dev_mode %}hidden{% endif %}>
     <span><strong>Development mode</strong> &mdash; API authentication is disabled.</span>
     <details class="dev-details">
@@ -37,7 +48,7 @@
     </details>
   </div>
 
-  <main class="content">
+  <main class="content" id="main" tabindex="-1">
     {% block content %}{% endblock %}
   </main>
 
@@ -47,5 +58,6 @@
   </footer>
 
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  {% block scripts %}{% endblock %}
 </body>
 </html>

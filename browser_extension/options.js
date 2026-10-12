@@ -13,13 +13,27 @@ function showResult(text, kind) {
 }
 
 async function load() {
-  var cfg = await chrome.storage.local.get(["endpoint_uid", "computer_name", "username", "server_url", "api_key"]);
+  var cfg = await chrome.storage.local.get(["endpoint_uid", "computer_name", "username", "server_url", "api_key", "sensor_secret", "paired_device_name"]);
   el("server_url").value = cfg.server_url || DEFAULT_SERVER_URL;
   el("computer_name").value = cfg.computer_name || "";
   el("username").value = cfg.username || "";
   el("api_key").value = "";                                  // never echoed back
   el("uid").textContent = cfg.endpoint_uid || "(created automatically)";
   showKeyState(Boolean(cfg.api_key));
+  showPairState(cfg);
+}
+
+function showPairState(cfg) {
+  el("pair_state").textContent = cfg.sensor_secret
+    ? "Paired with the Windows Agent of " + (cfg.paired_device_name || "this computer") + ". This browser is one sensor of that computer."
+    : "Not paired. This browser is reported as its own, unverified computer.";
+}
+
+function showPairResult(text, kind) {
+  var box = el("pair_result");
+  box.textContent = text || "";
+  box.className = "result " + (kind || "info");
+  box.hidden = !text;
 }
 
 function showKeyState(hasKey) {
@@ -42,9 +56,10 @@ async function ensureAccess(norm) {
   }
 }
 
-async function callServer(norm, apiKey, method, path, body) {
+async function callServer(norm, apiKey, method, path, body, sensorSecret) {
   var headers = {};
   if (apiKey) { headers["X-Api-Key"] = apiKey; }
+  if (sensorSecret) { headers["X-Sensor-Secret"] = sensorSecret; }
   if (body) { headers["Content-Type"] = "application/json"; }
   var controller = new AbortController();
   var timer = setTimeout(function () { controller.abort(); }, 6000);
@@ -115,12 +130,13 @@ async function save() {
   await chrome.storage.local.set(values);
   el("server_url").value = norm.url;
   el("api_key").value = "";
-  var stored = await chrome.storage.local.get(["endpoint_uid", "api_key"]);
+  var stored = await chrome.storage.local.get(["endpoint_uid", "api_key", "sensor_secret"]);
   showKeyState(Boolean(stored.api_key));
 
   // register / update this browser with the central server
-  var payload = { endpoint_uid: stored.endpoint_uid, computer_name: computerName, username: username, browser: browserName() };
-  var result = await callServer(norm, stored.api_key || "", "POST", "/api/endpoints/register", payload);
+  var payload = { endpoint_uid: stored.endpoint_uid, computer_name: computerName, username: username, browser: browserName(),
+                  sensor_version: extensionVersion() };
+  var result = await callServer(norm, stored.api_key || "", "POST", "/api/endpoints/register", payload, stored.sensor_secret || "");
   var msg = describe(result, "Saved. This browser is registered as " + computerName + ".");
   if (msg.kind !== "ok") { msg.text = "Saved, but registration failed. " + msg.text; }
   showResult(msg.text, msg.kind);
@@ -132,7 +148,60 @@ async function removeKey() {
   showResult("The saved API key was removed.", "info");
 }
 
+// Pair this browser with the Windows Agent on this computer: the owner types the code the agent printed; the agent (loopback only)
+// asks the server for a grant naming this installation; the server then attaches this browser to the agent's device.
+async function pair() {
+  var code = el("pair_code").value.trim();
+  if (!code) { showPairResult("Type the code printed by the Windows Agent.", "error"); return; }
+  var norm = normalizeServerUrl(el("server_url").value);
+  if (!norm.ok) { showPairResult(norm.error, "error"); return; }
+  if (!(await ensureAccess(norm))) { showPairResult("Access to the server was not allowed.", "error"); return; }
+  var agentRequest = { origins: [AGENT_PAIRING_ORIGIN + "/*"] };
+  try {
+    if (!(await chrome.permissions.contains(agentRequest)) && !(await chrome.permissions.request(agentRequest))) {
+      showPairResult("Access to the Windows Agent on this computer was not allowed.", "error");
+      return;
+    }
+  } catch (e) {
+    showPairResult("Access to the Windows Agent on this computer was not allowed.", "error");
+    return;
+  }
+  showPairResult("Pairing...", "info");
+  var cfg = await chrome.storage.local.get(["endpoint_uid", "api_key", "sensor_secret", "username"]);
+  var computerName = el("computer_name").value.trim() || ("BROWSER-" + String(cfg.endpoint_uid).slice(0, 8).toUpperCase());
+  var agent;
+  try {
+    var res = await fetch(AGENT_PAIRING_ORIGIN + "/pair", {
+      method: "POST", headers: { "Content-Type": "application/json" }, cache: "no-store",
+      body: JSON.stringify({ code: code, sensor_uid: cfg.endpoint_uid })
+    });
+    agent = { status: res.status, json: await res.json().catch(function () { return null; }) };
+  } catch (e) {
+    showPairResult("The Windows Agent did not answer on this computer. Is it running, with pairing enabled?", "error");
+    return;
+  }
+  if (agent.status !== 200 || !agent.json || !agent.json.grant) {
+    showPairResult((agent.json && agent.json.error) ? "The Windows Agent refused: " + agent.json.error : "The Windows Agent refused the pairing.", "error");
+    return;
+  }
+  var key = await effectiveKey();
+  var done = await callServer(norm, key, "POST", "/api/sensors/pair", {
+    grant: agent.json.grant, endpoint_uid: cfg.endpoint_uid, computer_name: computerName, username: cfg.username || el("username").value.trim(),
+    browser: browserName(), sensor_version: extensionVersion()
+  }, cfg.sensor_secret || "");
+  if (!done.reached) { showPairResult("Cannot reach the server to finish pairing.", "error"); return; }
+  if (done.status !== 201 || !done.json || !done.json.sensor_secret) {
+    showPairResult((done.json && done.json.error) ? "The server refused the pairing: " + done.json.error : "The server refused the pairing.", "error");
+    return;
+  }
+  await chrome.storage.local.set({ sensor_secret: done.json.sensor_secret, paired_device_name: done.json.device_name || "" });
+  el("pair_code").value = "";
+  showPairState({ sensor_secret: done.json.sensor_secret, paired_device_name: done.json.device_name });
+  showPairResult("Paired. This browser is now a sensor of " + (done.json.device_name || "this computer") + ".", "ok");
+}
+
 el("save").addEventListener("click", save);
+el("pair").addEventListener("click", pair);
 el("test").addEventListener("click", testConnection);
 el("remove_key").addEventListener("click", removeKey);
 load();

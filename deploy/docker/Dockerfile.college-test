@@ -1,0 +1,51 @@
+# Website Monitor - LOCAL compatibility test of the college installation (Phase F3.30). Docker is only a test bench: the college runs `python app.py` directly, no Docker.
+#
+# The college server is Ubuntu 20.04 (python3 = 3.8.10), account team2 (no root), project in /home/team2/cyber_project. This image reproduces exactly that, and the build performs the
+# college's own installation sequence:   cd /home/team2/cyber_project && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt
+#
+# Build context = the folder that holds `cyber_project/` (the staged college package) and `docker_test/` (this kit). No API key, .env, database or Windows file is copied (see
+# .dockerignore); nothing secret is baked into any layer. TLS verification is never disabled: if the network re-signs HTTPS the build fails with pip's certificate error.
+FROM ubuntu:20.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# What a stock Ubuntu 20.04 server needs for `python3 -m venv`: python3 (3.8.10) and python3-venv. curl is only for the health check; ca-certificates for pip's TLS.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 python3-venv ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# OPTIONAL: public root certificate(s) of a proxy/antivirus that re-signs HTTPS on THIS network (see extra-ca/README.txt). Empty by default. Verification stays ON; this only
+# adds a trusted root to the image's own certificate store, exactly what a college IT department would do. Never a private key, never a switch that turns checks off.
+COPY docker_test/extra-ca/ /usr/local/share/ca-certificates/extra/
+RUN update-ca-certificates
+
+# The college account: an ordinary user, uid 1000, home /home/team2. Everything below runs as this user.
+RUN useradd --create-home --uid 1000 --shell /bin/bash team2
+USER team2
+WORKDIR /home/team2
+
+# The project exactly as the college will receive it (no .env, no data, no venv, no tests), and a pristine copy for the independent verifier.
+COPY --chown=team2:team2 cyber_project/ /home/team2/cyber_project/
+COPY --chown=team2:team2 cyber_project/ /home/team2/package_pristine/
+COPY --chown=team2:team2 docker_test/verify_college_package.py /home/team2/smoke/verify_college_package.py
+
+WORKDIR /home/team2/cyber_project
+# Set PIP_CERT_FILE=/etc/ssl/certs/ca-certificates.crt (build arg) ONLY when extra-ca/ holds a certificate and pip otherwise fails with CERTIFICATE_VERIFY_FAILED.
+ARG PIP_CERT_FILE=
+# The college commands, verbatim (pip check is added to prove the resolved set is consistent).
+RUN bash -c "if [ -n \"$PIP_CERT_FILE\" ]; then export PIP_CERT=\"$PIP_CERT_FILE\"; fi; python3 --version && python3 -m venv venv && source venv/bin/activate && python --version && pip install -r requirements.txt && python -m pip check"
+
+# HOST=0.0.0.0 only so that Docker can publish the port from inside the container; the compose file binds it to 127.0.0.1 of your PC. With a non-loopback HOST the application
+# generates its own random API_KEY at first start (no key is baked in).
+ENV HOST=0.0.0.0 \
+    PORT=5002
+EXPOSE 5002
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=4 CMD curl -fsS http://127.0.0.1:5002/login > /dev/null || exit 1
+
+# The last college command: `python app.py` (debug off, database created on first start, setup code printed in the log).
+CMD ["bash", "-c", "source venv/bin/activate && exec python app.py"]

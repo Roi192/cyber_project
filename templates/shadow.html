@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Shadow comparison - Website Monitor{% endblock %}
+{% block content %}
+<section class="panel">
+  <div class="panel-head"><h2>Alert policy shadow comparison</h2></div>
+  <p class="muted">Information only. The running policy decides every alert. For each new visit the proposed corroborated policy is evaluated beside it; nothing on this page creates, closes, suppresses or changes an alert. Missing evidence is shown as <strong>insufficient</strong>, never as clean.</p>
+  <dl class="alert-facts">
+    <div><dt>Recorded visits</dt><dd>{{ counts.total }}</dd></div>
+    <div><dt>Agree</dt><dd>{{ counts.agree }}</dd></div>
+    <div><dt>Differ</dt><dd>{{ counts.differ }} ({{ counts.legacy_only }} legacy-only, {{ counts.shadow_only }} proposed-only, {{ counts.severity_differs }} severity)</dd></div>
+    <div><dt>Insufficient evidence</dt><dd>{{ counts.insufficient }}</dd></div>
+  </dl>
+</section>
+<section class="panel">
+  <div class="panel-head"><h2>Existing alerts (historical, reconstructed)</h2></div>
+  <p class="muted">Re-evaluated from the evidence stored now; the alerts themselves are unchanged. The sources consulted when the alert was raised were not recorded for these.</p>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Alert</th><th>Website</th><th>Legacy</th><th>Proposed</th><th>Agree</th><th>Basis and reason</th></tr></thead>
+    <tbody>
+    {% for h in history %}
+    <tr><td>#{{ h.alert_id }}</td><td class="domain">{{ h.domain }}</td><td>{{ h.legacy_severity }}</td><td>{{ h.shadow_severity or ('insufficient' if not h.sufficient else 'no alert') }}</td>
+      <td>{{ 'insufficient evidence' if h.agree is none else ('yes' if h.agree else 'no') }}</td><td class="wrap">{{ h.basis }}. {{ h.note }}</td></tr>
+    {% else %}<tr><td colspan="6" class="muted">No alerts.</td></tr>{% endfor %}
+    </tbody></table></div>
+</section>
+<section class="panel">
+  <div class="panel-head"><h2>Recent decisions</h2>
+    <a href="{{ url_for('shadow_review', differences=(None if only_differences else 1)) }}">{{ 'Show all' if only_differences else 'Only differences' }}</a></div>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Visit</th><th>Computer</th><th>Website</th><th>Legacy</th><th>Proposed</th><th>Agree</th><th>Why</th></tr></thead>
+    <tbody>
+    {% for d in recent %}
+    <tr><td>#{{ d.web_visit_id }}</td><td>{{ d.computer_name }}</td><td class="domain">{{ d.domain }}</td><td>{{ d.legacy_severity or 'no alert' }}</td><td>{{ d.shadow_severity or ('insufficient' if d.agree is none else 'no alert') }}</td>
+      <td>{{ 'insufficient evidence' if d.agree is none else ('yes' if d.agree else 'no') }}</td><td class="wrap">{{ d.summary }} {{ d.reasons|join(' ') if d.reasons }}</td></tr>
+    {% else %}<tr><td colspan="7" class="muted">No decisions recorded yet. Recording starts with the next server start.</td></tr>{% endfor %}
+    </tbody></table></div>
+</section>
+{% endblock %}

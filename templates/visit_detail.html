@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Analysis of {{ v.domain }} - Website Monitor{% endblock %}
+{% block content %}
+<section class="panel analysis">
+  <div class="panel-head">
+    <h2>Analysis of <span class="domain">{{ v.domain }}</span></h2>
+    <a class="link" href="javascript:history.back()">Back</a>
+  </div>
+
+  {% if ip_only %}
+  <p class="muted">This older record only notes that a program connected to an address. It is not a website visit and has no reputation analysis.</p>
+  {% else %}
+  <dl class="facts">
+    <div><dt>Overall verdict</dt><dd><span class="badge badge-{{ v.reputation_status|lower }}">{{ v.status_label }}</span>
+      <span class="muted">{{ v.status_hint }}</span></dd></div>
+    <div><dt>Website</dt><dd class="domain">{{ v.domain }}</dd></div>
+    <div><dt>Computer</dt><dd>{{ v.computer_name }}</dd></div>
+    <div><dt>Browser</dt><dd>{{ v.browser or '-' }}</dd></div>
+    <div><dt>Visited</dt><dd>{{ v.visited_at }}</dd></div>
+    <div><dt>Primary source</dt><dd>{{ v.source_label }}
+      {% if primary %}<span class="muted">- this record backs up the visit recorded by the {{ primary.label|lower }} at {{ primary.time }}
+        (<a href="{{ url_for('visit_detail', visit_id=primary.id) }}">see it</a>)</span>{% endif %}</dd></div>
+    <div><dt>Supporting sources</dt><dd>
+      {% if supporting %}{% for s in supporting %}{{ s.label }} at {{ s.time }}{% if not loop.last %}, {% endif %}{% endfor %}
+      <span class="muted">(the same visit, seen a second time: it is counted once)</span>
+      {% elif primary %}{{ v.source_label }} (this record){% else %}none{% endif %}</dd></div>
+    {% if analysis and analysis.overall %}
+    <div><dt>Analysed</dt><dd>{{ analysis.overall.checked_at }}
+      <span class="muted">- the result is reused for later visits until {{ analysis.overall.expires_at }}, so a repeat visit does not ask the providers again</span></dd></div>
+    {% endif %}
+  </dl>
+  {% if differs %}
+  <p class="muted">The latest analysis of this website says <strong>{{ status_labels[latest_status] }}</strong>; the verdict above is the one recorded when this visit happened.</p>
+  {% endif %}
+
+  {% if assessment %}
+  <h3>Risk assessment</h3>
+  <div class="risk-box">
+    <p><span class="risk-pill risk-{{ assessment.band }} risk-big" title="{{ score_tooltip }}">Risk {{ assessment.score }} / 100 &middot; {{ assessment.label }}</span>
+       <span class="muted">site-level evidence: {{ assessment.host_score }} &middot; this page's own evidence: {{ assessment.url_score }}</span></p>
+    <p class="muted">{{ score_tooltip }} Bands: 0-19 no known risk indicators, 20-39 low concern, 40-59 suspicious, 60-79 high risk, 80-100 critical risk.</p>
+    <p><strong>Why this score</strong></p>
+    <ul class="risk-lines">{% for line in assessment.lines %}<li>{{ line }}</li>{% endfor %}</ul>
+    <p><strong>Evidence coverage:</strong> {{ assessment.coverage_text }}.</p>
+    <table class="mini" id="coverage-table">
+      {% for c in assessment.coverage %}<tr><th>{{ c.provider }}</th><td>{{ c.text }}</td></tr>{% endfor %}
+    </table>
+    {% if assessment.caveat %}<p class="muted">{{ assessment.caveat }}</p>{% endif %}
+    {% if discrepancy %}<p class="muted"><strong>Note:</strong> {{ discrepancy }}</p>{% endif %}
+    <p class="muted">The score is shown beside the alert; it does not change the alert rule (policy in force: legacy).{% if alert_severity %} An alert exists for this visit ({{ 'dangerous' if alert_severity == 'HIGH' else 'needs review' }}).{% else %} No alert was raised for this visit.{% endif %}</p>
+  </div>
+  {% endif %}
+
+  {% if address_checks %}
+  <h3>This page's own address check</h3>
+  <p class="muted">Checked separately from the site as a whole{% if page_path %} ({{ page_path }}){% endif %}. A finding here is about this page only; it does not make other pages of {{ v.domain }} malicious.</p>
+  {% for c in address_checks %}
+  <div class="provider-card provider-{{ c.state|lower }}">
+    <div class="provider-head"><strong>{{ c.provider }}</strong> <span class="state state-{{ c.state|lower }}">{{ c.state_label }}</span> <span class="muted">{{ c.scope_label }}</span></div>
+    {% if c.state == 'CHECKED' %}
+      <p>Verdict for this page: <span class="badge badge-{{ (c.verdict or 'unknown')|lower }}">{% if c.weak %}Weak finding{% else %}{{ status_labels[c.verdict or 'UNKNOWN'] }}{% endif %}</span>
+        {% if c.strength %}<span class="muted">Evidence strength: {{ c.strength }}</span>{% endif %}</p>
+      {% if c.categories %}<p class="muted">Threat category: {{ c.categories|join(', ') }}</p>{% else %}<p class="muted">No listing was found for this address. A missing listing is not proof that the page is safe.</p>{% endif %}
+      {% if c.reason %}<p class="muted">{{ c.reason }}</p>{% endif %}
+    {% else %}
+      <p class="muted">{% if c.skip_text %}{{ c.skip_text }}{% elif c.state == 'UNAVAILABLE' %}The provider could not be reached or was busy, so this page's address was not checked.{% else %}The provider answered with an error, so this page's address was not checked.{% endif %}
+        This is <strong>not</strong> a safe result.</p>
+      {% if c.error %}<p class="muted">Technical detail: {{ c.error }}</p>{% endif %}
+    {% endif %}
+    <p class="muted">{% if c.state == 'CHECKED' %}Checked at {{ c.checked_at }}{% if c.reused %} (answer reused from an earlier check of the same address){% endif %}{% if c.valid_until %}, valid until {{ c.valid_until }}{% endif %}.{% else %}Recorded at {{ c.checked_at }}.{% endif %}</p>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  {% macro kv(rows) %}<dl class="kv">{% for r in rows %}<div class="kv-row{% if r.flag %} kv-{{ r.flag }}{% endif %}"><dt>{{ r.label }}</dt><dd>{{ r.value }}{% if r.hint %} <span class="muted small">({{ r.hint }})</span>{% endif %}{% if r.lines %}<ul class="kv-items">{% for i in r.lines %}<li>{{ i }}</li>{% endfor %}</ul>{% endif %}</dd></div>{% endfor %}</dl>{% endmacro %}
+  {% if panels %}
+  <h3>Security summary</h3>
+  <p class="muted">Seven active sources, seven different kinds of intelligence: they are not equivalent malware scanners. "No threat detected" only means that source had nothing to report; it never means the website is safe.
+    APIVoid, MetaDefender Cloud and AbuseIPDB are <strong>observation only</strong>: they are stored and shown, but they do not (yet) change the verdict, the risk score or any alert. AbuseIPDB is <strong>IP reputation</strong>, about the address a site resolves to, not about the website.</p>
+  <div class="table-wrap">
+    <table class="table summary-table" id="sources-glance">
+      <thead><tr><th>Provider</th><th>Lookup</th><th>Verdict</th><th>Evidence strength</th><th>Main findings</th><th>Scope</th><th>Checked / valid until</th></tr></thead>
+      <tbody>
+      {% for p in panels %}
+        <tr class="sum-row sum-{{ p.verdict|lower }}">
+          <td data-label="Provider"><a href="#prov-{{ loop.index }}"><strong>{{ p.provider }}</strong></a>{% if p.role != 'scoring' %} <span class="role-chip role-{{ p.role|replace(' ', '-') }}">{{ p.role }}</span>{% endif %}<div class="muted small">{{ p.kind }}</div></td>
+          <td data-label="Lookup">{{ p.state_label }}</td>
+          <td data-label="Verdict"><span class="verdict-chip verdict-{{ p.verdict|lower }}">{{ p.verdict_label }}</span>{% if p.weak %} <span class="muted small">(weak finding)</span>{% endif %}</td>
+          <td data-label="Evidence strength">{{ p.strength }}</td>
+          <td data-label="Main findings">{{ p.headline or '-' }}{% if p.categories %}<div class="muted small">{{ p.categories|join(', ') }}</div>{% endif %}</td>
+          <td data-label="Scope">{{ p.scope_label }}{% if p.page %}<div class="muted small">+ exact page: {{ p.page.verdict_label|lower }}</div>{% endif %}</td>
+          <td data-label="Checked / valid until" class="mono small">{{ p.checked_at or '-' }}{% if p.valid_until %}<br>{{ 'until' if p.state == 'CHECKED' else 'retry after' }} {{ p.valid_until }}{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h3>What each security provider found</h3>
+  {% for p in panels %}
+  <section class="prov-card prov-{{ p.verdict|lower }}" id="prov-{{ loop.index }}">
+    <div class="prov-head">
+      <strong class="prov-name">{{ p.provider }}</strong>
+      <span class="verdict-chip verdict-{{ p.verdict|lower }}">{{ p.verdict_label }}</span>{% if p.role != 'scoring' %}
+      <span class="role-chip role-{{ p.role|replace(' ', '-') }}">{{ p.role }}</span>{% endif %}
+      <span class="muted small">{% if p.strength and p.strength != '-' %}Evidence strength: {{ p.strength }} &middot; {% endif %}{{ p.scope_label }}</span>
+    </div>
+    <p class="prov-plain">{{ p.plain }}</p>
+    {% if p.metrics %}
+    <h4 class="sect-title">{{ p.metrics_title }}</h4>
+    <dl class="metrics">
+      {% for m in p.metrics %}<div class="metric"><dt>{{ m.label }}</dt><dd>{{ m.value }}</dd></div>{% endfor %}
+    </dl>
+    {% endif %}
+    {% if p.flagged %}
+    <p class="muted"><strong>Flagged by:</strong></p>
+    <ul class="chips">{% for d in p.flagged %}<li class="chip chip-{{ d.category }}">{{ d.engine }} <span class="muted">({{ d.category }}{% if d.result %}: {{ d.result }}{% endif %})</span></li>{% endfor %}</ul>
+    {% endif %}
+    {% if p.sections.threat %}<div class="sect sect-threat"><h4 class="sect-title">More threat evidence</h4>{{ kv(p.sections.threat) }}</div>{% endif %}
+    {% if p.sections.context %}<div class="sect sect-context"><h4 class="sect-title">Contextual intelligence</h4>{{ kv(p.sections.context) }}</div>{% endif %}
+    {% if p.sections.infra %}<details class="sect sect-infra"><summary class="sect-title">Infrastructure metadata</summary>{{ kv(p.sections.infra) }}</details>{% endif %}
+    {% if p.sections.limits %}<div class="sect sect-limits"><h4 class="sect-title">Coverage limitations</h4><ul class="muted small">{% for n in p.sections.limits %}<li>{{ n }}</li>{% endfor %}</ul></div>{% endif %}
+    {% if p.page %}<p class="muted"><strong>Exact page:</strong> <span class="verdict-chip verdict-{{ p.page.verdict_label|lower|replace(' ', '_') }}">{{ p.page.verdict_label }}</span> {{ p.page.plain }}</p>{% endif %}
+    <details class="tech"><summary>Technical details</summary>
+      {% if p.flagged %}<p class="muted">Flagged by: {% for d in p.flagged %}{{ d.engine }} ({{ d.category }}{% if d.result %}: {{ d.result }}{% endif %}){% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+      <table class="mini">
+        {% for r in p.details_rows %}<tr><th>{{ r.label }}</th><td>{{ r.value }}{% if r.hint %} <span class="muted">({{ r.hint }})</span>{% endif %}</td></tr>{% endfor %}
+        {% if p.reason %}<tr><th>Provider's own wording</th><td>{{ p.reason }}</td></tr>{% endif %}
+        <tr><th>Provider verdict</th><td>{{ p.verdict_label }}{% if p.weak %} (weak finding){% endif %}</td></tr>
+        <tr><th>Checked at</th><td>{{ p.checked_at or 'never' }}{% if p.valid_until %}, {{ 'reused until' if p.state == 'CHECKED' else 'tried again after' }} {{ p.valid_until }}{% endif %}</td></tr>
+        <tr><th>Kind of intelligence</th><td>{{ p.kind }}</td></tr>
+      </table>
+      {% for n in p.notes %}<p class="muted">{{ n }}</p>{% endfor %}
+    </details>
+  </section>
+  {% endfor %}
+  {% endif %}
+  {% endif %}
+</section>
+{% endblock %}

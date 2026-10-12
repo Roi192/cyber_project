@@ -61,10 +61,21 @@ On first run the extension generates a random UUID with `crypto.randomUUID()`
 and stores it in `chrome.storage.local`. It is created once and never changes;
 renaming the computer or user keeps the same identity. Removing the extension
 and installing it again creates a new UUID, which the server treats as a new
-computer. The UUID is shown only under "Technical details" in the options. No
+computer unless you pair it again (see Pairing below). The UUID is shown only under "Technical details" in the options. No
 MAC address, serial number, hostname or Windows account is read - a browser
 extension cannot (and should not) read them, so the computer and user names are
 labels you type.
+
+## Pairing with the Windows Agent (version 0.4.0)
+
+An unpaired extension is an *unverified* computer of its own. If the Windows Agent runs on the same computer, run
+`windows_agent.py pair-code` there and type the code under "Pair with this computer's Windows Agent" in the options.
+The extension sends the code (never the API key) to `http://127.0.0.1:47619/pair`, receives a short-lived grant, hands
+it to the server and stores the **sensor secret** the server returns in `chrome.storage.local`; from then on every
+request carries it as `X-Sensor-Secret`. Chrome, Edge and every browser profile are separate sensors of the one
+computer. The manifest permissions are unchanged: the first pairing asks the browser for permission to reach
+`127.0.0.1:47619` (an optional host permission, requested only when you press the button). Reinstalling the extension
+creates a new sensor; pair it again and it joins the same computer.
 
 ## Heartbeat
 

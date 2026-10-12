@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}{{ computer.computer_name }} - Website Monitor{% endblock %}
+{% block content %}
+{% include "_chart_defs.html" %}
+<nav class="crumbs" aria-label="Breadcrumb"><a href="{{ url_for('dashboard') }}">Dashboard</a> <span aria-hidden="true">/</span> <a href="{{ url_for('endpoints') }}">Computers</a> <span aria-hidden="true">/</span> <span aria-current="page">{{ computer.computer_name }}</span></nav>
+
+<section class="cd" id="cd-root" data-device-id="{{ computer.device_id }}" data-days="{{ days }}"
+         data-detail-url="{{ url_for('analytics.api_computer', device_id=computer.device_id) }}"
+         data-activity-url="{{ url_for('analytics.api_computer_activity', device_id=computer.device_id) }}"
+         data-browsing-url="{{ url_for('browsing') }}" data-visit-base="{{ url_for('dashboard') }}visits/">
+  <div class="exec-head">
+    <div>
+      <h1 class="cd-title" id="cd-title">{{ computer.computer_name }}</h1>
+      <p class="cd-badges">
+        <span class="pill pill-{{ computer.identity_tone }}" id="cd-identity" data-identity-level="{{ computer.identity_level }}">{{ computer.identity_short }}</span>
+        <span class="pill pill-muted" id="cd-online">{{ 'Reporting now' if computer.status == 'ONLINE' else 'Not reporting now' }}</span>
+        <span class="muted" id="cd-user"></span>
+      </p>
+      {% if not computer.identity_admin_approved %}<p class="muted cd-identity-note">{{ computer.identity_explanation }}</p>{% endif %}
+    </div>
+    <fieldset class="period" id="period-select" aria-label="Reporting period">
+      <legend class="visually-hidden">Reporting period</legend>
+      {% for value in (7, 14, 30) %}
+      <label class="period-option"><input type="radio" name="period" value="{{ value }}" {% if value == days %}checked{% endif %}><span>Last {{ value }} days</span></label>
+      {% endfor %}
+    </fieldset>
+  </div>
+  <div class="visually-hidden" role="status" aria-live="polite" id="exec-announce"></div>
+  <div class="exec-notice" id="exec-notice" hidden></div>
+  <div class="exec-error" id="cd-error" role="alert" hidden></div>
+
+  <div class="cd-grid">
+    <section class="panel" aria-labelledby="cd-risk-title" id="cd-risk" aria-busy="true">
+      <h2 id="cd-risk-title">Observed web exposure</h2>
+      <div class="risk-head" id="cd-risk-head"></div>
+      <ul class="reasons" id="cd-risk-reasons"></ul>
+      <p class="muted cd-disclaimer" id="cd-risk-disclaimer"></p>
+    </section>
+    <section class="panel" aria-labelledby="cd-cov-title" id="cd-coverage" aria-busy="true">
+      <h2 id="cd-cov-title">Monitoring coverage and limits</h2>
+      <div class="cov-head" id="cd-cov-head"></div>
+      <ul class="reasons" id="cd-cov-reasons"></ul>
+      <details class="tech cd-tech"><summary>Technical details</summary><dl class="facts" id="cd-cov-facts"></dl></details>
+    </section>
+  </div>
+
+  <section class="panel chart-panel" aria-labelledby="trend-title">
+    <div class="panel-head">
+      <h2 id="trend-title">Website activity per day</h2>
+      <button type="button" class="btn btn-small btn-quiet" id="trend-toggle" aria-pressed="false" aria-controls="trend-table-wrap">Show as table</button>
+    </div>
+    <div class="chart-legend" id="trend-legend" aria-label="Chart legend">
+      <span class="legend-item"><svg class="legend-swatch" viewBox="0 0 14 14" aria-hidden="true"><rect width="14" height="14" rx="2" class="bar-malicious"></rect></svg>Dangerous</span>
+      <span class="legend-item"><svg class="legend-swatch" viewBox="0 0 14 14" aria-hidden="true"><rect width="14" height="14" rx="2" class="bar-suspicious"></rect></svg>Needs review</span>
+      <span class="legend-item"><svg class="legend-swatch" viewBox="0 0 14 14" aria-hidden="true"><rect width="14" height="14" rx="2" class="bar-unknown" style="fill:url(#dots-unknown)"></rect></svg>Could not be checked</span>
+      <span class="legend-item"><svg class="legend-swatch" viewBox="0 0 14 14" aria-hidden="true"><rect width="14" height="14" rx="2" class="bar-safe"></rect></svg>No threat detected</span>
+      <span class="legend-item"><svg class="legend-swatch" viewBox="0 0 14 14" aria-hidden="true"><rect width="14" height="14" rx="2" class="bar-nodata" style="fill:url(#hatch-nodata)"></rect></svg>Before this computer was first seen</span>
+    </div>
+    <div class="chart-box" id="trend-chart" aria-busy="true"><p class="muted chart-loading">Loading&hellip;</p></div>
+    <div class="chart-tooltip" id="trend-tooltip" role="tooltip" hidden></div>
+    <div class="table-wrap" id="trend-table-wrap" hidden></div>
+    <p class="muted chart-note" id="trend-note"></p>
+  </section>
+
+  <section class="panel" aria-labelledby="cd-domains-title">
+    <div class="panel-head"><h2 id="cd-domains-title">Dangerous and suspicious websites</h2></div>
+    <div class="table-wrap">
+      <table class="table" id="cd-domains-table" hidden>
+        <caption class="visually-hidden">Dangerous and suspicious websites opened on this computer</caption>
+        <thead><tr><th scope="col">Website</th><th scope="col">Verdict</th><th scope="col">Visits</th><th scope="col">First</th><th scope="col">Last</th><th scope="col">Evidence</th></tr></thead>
+        <tbody id="cd-domains-body"></tbody>
+      </table>
+    </div>
+    <p class="empty" id="cd-domains-empty" hidden></p>
+  </section>
+
+  <section class="panel" aria-labelledby="cd-visits-title">
+    <div class="panel-head"><h2 id="cd-visits-title">Recent browsing activity</h2><a class="link" href="{{ url_for('browsing') }}">All browsing</a></div>
+    <div class="table-wrap">
+      <table class="table" id="cd-visits-table" hidden>
+        <caption class="visually-hidden">Most recent website visits from this computer, newest first</caption>
+        <thead><tr><th scope="col">Time</th><th scope="col">Website</th><th scope="col">Result</th><th scope="col">Browser</th><th scope="col">Seen by</th><th scope="col">Evidence</th></tr></thead>
+        <tbody id="cd-visits-body"></tbody>
+      </table>
+    </div>
+    <p class="empty" id="cd-visits-empty" hidden></p>
+  </section>
+
+  <section class="panel" aria-labelledby="cd-alerts-title">
+    <div class="panel-head"><h2 id="cd-alerts-title">Open alerts and evidence</h2><a class="link" href="{{ url_for('alerts') }}">All alerts</a></div>
+    <ul class="attention-list" id="cd-alerts-list" hidden></ul>
+    <p class="empty" id="cd-alerts-empty" hidden></p>
+  </section>
+</section>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/executive.js') }}"></script>{% endblock %}

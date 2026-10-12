@@ -4,6 +4,13 @@
 
 var DEFAULT_SERVER_URL = "http://127.0.0.1:5002";
 
+// The Windows agent on THIS computer listens here (loopback only) so the owner can pair this browser with it.
+var AGENT_PAIRING_ORIGIN = "http://127.0.0.1:47619";
+
+function extensionVersion() {
+  try { return (chrome.runtime.getManifest && chrome.runtime.getManifest().version) || ""; } catch (e) { return ""; }
+}
+
 // Navigations the BROWSER makes by itself, not the employee. Every entry is an
 // exact host AND an exact path, so normal browsing to the same company
 // (www.msn.com, msn.com/en-us/...) is never filtered. Keep this list tiny; add a

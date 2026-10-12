@@ -14,35 +14,60 @@
   {% if show_archived %}
   <p class="muted">Archived computers are hidden from the dashboard counts. Their browsing history and alerts are kept.
     A computer that connects again is restored automatically.</p>
+  {% else %}
+  <p class="muted">One row is one computer. Each browser extension and the Windows Agent on it is a <em>sensor</em> of that computer and
+    keeps its own status. The label under each name says how its identity is known: <em>self-enrolled</em> means its Windows Agent registered
+    itself (no administrator has approved it); <em>unverified</em> means a browser installation not paired with an agent, or a record from before
+    devices existed. None of these labels proves which physical computer it is.</p>
   {% endif %}
   <div class="table-wrap" id="endpoints-table" {% if not endpoints %}hidden{% endif %}>
     <table class="table">
       <thead>
-        <tr><th>Computer</th><th>User</th><th>Browser</th><th>Status</th><th>Last seen</th><th>Websites today</th><th>Security issues today</th></tr>
+        <tr><th>Computer</th><th>User</th><th>Browser</th><th>Status</th><th>Visibility</th><th>Last seen</th><th>Websites today</th>{% if show_contacted %}<th>Domains seen by the agent today</th>{% endif %}<th>Security issues today</th></tr>
       </thead>
       <tbody id="endpoints-body" data-archived="{{ '1' if show_archived else '' }}">
       {% for e in endpoints %}
         <tr data-endpoint-id="{{ e.id }}">
           <td>
             <strong>{{ e.computer_name }}</strong>
+            {% if not show_archived %}<div><a class="link detail-link" href="{{ url_for('computer_detail', device_id=e.device_id) }}">Risk &amp; coverage details</a></div>{% endif %}
+            <div class="muted identity identity-{{ e.identity|lower }}">{{ e.identity_label }}</div>
+            {% if e.former_device %}<div class="muted former-note" id="former-note-{{ e.device_id }}">{{ e.visibility_note }}</div>{% endif %}
+            <ul class="sensor-list">
+            {% for s in e.sensors %}
+              <li>
+                <span class="sensor-type">{{ s.type_label }}{% if s.browser and s.type == 'LEGACY_COMBINED' %} ({{ s.browser }}){% endif %}</span>
+                <span data-field="sensor_status_{{ s.id }}"><span class="badge badge-{{ s.status|lower }}">{{ 'Online' if s.status == 'ONLINE' else 'Offline' }}</span></span>
+                <span class="muted" data-field="sensor_seen_{{ s.id }}">{{ s.last_seen_relative }}</span>
+                {% if s.revoked %}<span class="badge badge-sev-high">Revoked</span>{% endif %}
+                <div class="muted" data-field="sensor_collectors_{{ s.id }}">{{ s.collectors_text }}</div>
+              </li>
+            {% endfor %}
+            </ul>
             <details class="tech"><summary>Technical details</summary>
-              <div class="muted mono">Installation ID: {{ e.endpoint_uid }}</div>
+              {% if e.endpoint_uid %}<div class="muted mono">Installation ID: {{ e.endpoint_uid }}</div>{% endif %}
               <div class="muted mono">Last seen: {{ e.last_seen }}</div>
+              <div class="muted">Sensors: {{ e.sensor_count }} ({{ e.online_sensor_count }} online)</div>
+              <div class="muted">Reports through:
+                {% if e.browser %}browser extension ({{ e.browser }}){% endif %}{% if e.browser and e.has_agent %}, {% endif %}{% if e.has_agent %}network agent {{ e.agent_version }}{% endif %}{% if not e.browser and not e.has_agent %}-{% endif %}</div>
               <form method="post" class="inline-form"
-                    action="{{ url_for('restore_endpoint' if show_archived else 'archive_endpoint', endpoint_id=e.id) }}">
+                    action="{% if e.former_device %}{{ url_for('restore_device' if show_archived else 'archive_device', device_id=e.device_id) }}{% else %}{{ url_for('restore_endpoint' if show_archived else 'archive_endpoint', endpoint_id=e.id) }}{% endif %}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 {% if show_archived %}<input type="hidden" name="view" value="archived">{% endif %}
                 <button type="submit" class="btn btn-small btn-quiet">{{ 'Restore this computer' if show_archived else 'Archive this computer' }}</button>
               </form>
               {% if not show_archived %}
-              <div class="muted">Archiving hides it from this page and the dashboard counts. Nothing is deleted.</div>
+              <div class="muted">Archiving hides it and all its sensors from this page and the dashboard counts. Nothing is deleted.</div>
               {% endif %}
             </details>
           </td>
           <td data-field="username">{{ e.username or '-' }}</td>
           <td data-field="browser">{{ e.browser or '-' }}</td>
           <td data-field="status"><span class="badge badge-{{ e.status|lower }}">{{ 'Online' if e.status == 'ONLINE' else 'Offline' }}</span></td>
+          <td data-field="visibility_label" title="{{ e.visibility_hint }}"><span class="vis vis-{{ e.visibility|lower }}">{{ e.visibility_label }}</span></td>
           <td class="nowrap" data-field="last_seen_relative" title="{{ e.last_seen }}">{{ e.last_seen_relative }}</td>
           <td data-field="websites_today">{{ e.websites_today }}</td>
+          {% if show_contacted %}<td data-field="contacted_today">{{ e.contacted_today }}</td>{% endif %}
           <td data-field="threats_today">{% if e.threats_today %}<span class="badge badge-sev-high">{{ e.threats_today }}</span>{% else %}0{% endif %}</td>
         </tr>
       {% endfor %}

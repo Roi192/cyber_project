@@ -1,0 +1,33 @@
+{
+ "made_at": "20261010_211601",
+ "sha256": "989ba46e9a8d4a197d19e2d8af0ef61355886528b51bd567fa7de1100b63524c",
+ "tables": {
+  "admins": 1,
+  "alert_decisions": 113,
+  "alert_events": 28,
+  "alerts": 7,
+  "device_audit": 0,
+  "devices": 2,
+  "domain_reputation": 53,
+  "endpoints": 2,
+  "login_attempts": 11,
+  "network_activity": 147,
+  "pairing_grants": 0,
+  "recovery_cache_index_evidence": 14,
+  "recovery_comparison": 8,
+  "recovery_endpoints_reconstructed": 10,
+  "recovery_evidence_partial_visits": 48,
+  "recovery_exclusions": 37,
+  "recovery_merge_log": 14,
+  "recovery_network_counter_components": 10,
+  "recovery_pending_post_incident": 14,
+  "recovery_provenance": 268,
+  "recovery_staging_manifest": 3,
+  "reputation_evidence": 195,
+  "sensor_device_associations": 2,
+  "url_lookup_cache": 0,
+  "visit_url_evidence": 141,
+  "web_visits": 575
+ },
+ "integrity": "ok"
+}

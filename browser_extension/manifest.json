@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Website Monitor Collector",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Reports the websites (domain and path only) this browser visits to your company's Website Monitor server.",
   "permissions": ["webNavigation", "storage", "alarms"],
   "host_permissions": [

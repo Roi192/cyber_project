@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>First-time setup - Website Monitor</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="login-page">
+  <main class="login-card" aria-labelledby="setup-title">
+    <div class="brand login-brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span>Website Monitor</span>
+    </div>
+    <h1 id="setup-title" class="login-title">Create the administrator</h1>
+
+    {% if error %}
+    <p class="login-error" role="alert">{{ error }}</p>
+    {% endif %}
+
+    <p class="login-note" role="status">
+      First-time setup. This page exists only until the first administrator is created. Type the <strong>setup code</strong> that the server printed
+      in the terminal where it was started, then choose a user name and a password of at least 12 characters.
+    </p>
+
+    <form method="post" action="{{ url_for('auth.setup') }}" class="login-form" autocomplete="off">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label for="code">Setup code</label>
+      <input id="code" name="code" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="64" required autofocus>
+      <label for="username">User name</label>
+      <input id="username" name="username" type="text" value="{{ username or '' }}" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="40" required>
+      <label for="password">Password (at least 12 characters)</label>
+      <input id="password" name="password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+      <label for="confirm">Repeat the password</label>
+      <input id="confirm" name="confirm" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+      <button type="submit" class="btn login-submit">Create administrator</button>
+    </form>
+    <p class="login-foot muted">The code is shown only in the server's terminal. Nothing else can create an administrator.</p>
+  </main>
+</body>
+</html>

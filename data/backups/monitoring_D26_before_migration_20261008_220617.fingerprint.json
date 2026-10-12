@@ -1,0 +1,109 @@
+{
+ "tables": {
+  "admins": [
+   1,
+   "b4d364f7b4abe9fc5501bb53e778fd7179b831d5883a6e77871612066aa4b3cd"
+  ],
+  "alert_events": [
+   0,
+   "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  ],
+  "alerts": [
+   0,
+   "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  ],
+  "device_audit": [
+   0,
+   "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  ],
+  "devices": [
+   2,
+   "dd7b3131cd5eee85ccf8db24a83d439fe9e5bfc5ae41eb94ee19595bd164075e"
+  ],
+  "domain_reputation": [
+   18,
+   "25d6e796fcf7536ae29a12d0a2cf6ff5c6ebecece0e5e01bbde4b3cc0712c314"
+  ],
+  "endpoints": [
+   2,
+   "fa5efbe4f2ce1d9c363b93783db01177cd0be2d17dc17735af161699f1e0bdd4"
+  ],
+  "login_attempts": [
+   9,
+   "99d4b3cf3074fb14449f1d025802ce656a6c4b4d2632499cb10928c69e250ba1"
+  ],
+  "network_activity": [
+   71,
+   "924a7325da00d402868a2fb1df94b055666b8f5d3ed695a1ab85781c7b3c0867"
+  ],
+  "pairing_grants": [
+   0,
+   "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  ],
+  "recovery_cache_index_evidence": [
+   14,
+   "a7a74a863a32c17b318c360052009aa7cdb3141eacd0443bd867143256a4cf30"
+  ],
+  "recovery_comparison": [
+   8,
+   "82524da501a04105d560d670dc473fdce73bfd79037bfbecb0b86dcfcce7a546"
+  ],
+  "recovery_endpoints_reconstructed": [
+   10,
+   "dcd0f1de5072249d059b104e7e7c2e9c156efec253af7743a6aa7c7933989a86"
+  ],
+  "recovery_evidence_partial_visits": [
+   48,
+   "69e5cadc18840fc1d61969dc9e5d9b2dd9e7078777151ae4b5a654c6ac2550d2"
+  ],
+  "recovery_exclusions": [
+   37,
+   "e6ca520359709f9093493761ee4540d99444e5e318b8a1c56ccbf0303d5e0fa0"
+  ],
+  "recovery_merge_log": [
+   14,
+   "93d93a29cf6b156aa0bb0705bc1d61f0c58b432753699c003863935200ab98bf"
+  ],
+  "recovery_network_counter_components": [
+   10,
+   "429b017d333d3051c599dc443eaa7ca1a4154ce63e2ff755c2e4cde511ef10d6"
+  ],
+  "recovery_pending_post_incident": [
+   14,
+   "50097031074701925871c0630fbb11e5561064a4703887a935d38a1d53d0170c"
+  ],
+  "recovery_provenance": [
+   268,
+   "8076e9b11a401c3a1a1d39c793700fe9cb90538869d105d395a91aa16d77597a"
+  ],
+  "recovery_staging_manifest": [
+   3,
+   "866b6fd3c4f98938b79fda0b2e0d9c7cbe2e7c397c78546ad71ae32528982a58"
+  ],
+  "reputation_evidence": [
+   4,
+   "a58ef785109fc949ab4eb465e545ecae9dc9b44c48e81eae8916adb7937023a0"
+  ],
+  "web_visits": [
+   145,
+   "c26c2b861540f337b54f8e6e71c093034cdd8b59fc4879c9d3b244833dc915ed"
+  ]
+ },
+ "sqlite_sequence": {
+  "endpoints": 5113,
+  "web_visits": 270,
+  "network_activity": 5898,
+  "domain_reputation": 29,
+  "devices": 2,
+  "recovery_network_counter_components": 10,
+  "reputation_evidence": 4,
+  "admins": 1,
+  "login_attempts": 9
+ },
+ "integrity": "ok",
+ "fk_violations": 0,
+ "source": "C:\\Users\\Moshe\\cyber_project\\data\\monitoring.db",
+ "backup": "C:\\Users\\Moshe\\cyber_project\\data\\backups\\monitoring_D26_before_migration_20261008_220617.db",
+ "sha256": "58b831c5ba2682ad703956f07d5a7a6d25ef7d73a1b470003884df5f7ae51c08",
+ "size": 319488
+}

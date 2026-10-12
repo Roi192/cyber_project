@@ -1,0 +1,116 @@
+{
+ "tables": {
+  "admins": [
+   1,
+   "1f2c2e5edbc063f8454f6412fbf26b2a12fc61a37f261bec8a35ceb433ada8d5"
+  ],
+  "alert_events": [
+   2,
+   "9450ba7412c42d688e26c11029e02c9e61f99c6fd4333822c65f0cc1fb2184ad"
+  ],
+  "alerts": [
+   1,
+   "831040f42e978f766260fdb2fb22eeb6a801c523c883c886e5f35db1f5e86adc"
+  ],
+  "device_audit": [
+   0,
+   "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  ],
+  "devices": [
+   2,
+   "bca49dc5f32bc09c9310a0cb32a4ad2d78a8160bfe1382a7d9d61cd2a3fdabfb"
+  ],
+  "domain_reputation": [
+   21,
+   "7a55fa41cca2422cba8bd30105badfcf8aeebd51ebf953bdd5b41dbda91de861"
+  ],
+  "endpoints": [
+   2,
+   "cd89e7b103685cdf30b5702691ca1045673d0d332c3110f5880744e16e87ed84"
+  ],
+  "login_attempts": [
+   10,
+   "7801f80d5e295f5813c90000674201032d9b4a7f717a2c0a5d634a38afcd8272"
+  ],
+  "network_activity": [
+   73,
+   "5ba65ec98c1dc3a29e52d968d508ffc4004d1c76d27a38511bafb68907fcf30a"
+  ],
+  "pairing_grants": [
+   0,
+   "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  ],
+  "recovery_cache_index_evidence": [
+   14,
+   "a7a74a863a32c17b318c360052009aa7cdb3141eacd0443bd867143256a4cf30"
+  ],
+  "recovery_comparison": [
+   8,
+   "82524da501a04105d560d670dc473fdce73bfd79037bfbecb0b86dcfcce7a546"
+  ],
+  "recovery_endpoints_reconstructed": [
+   10,
+   "dcd0f1de5072249d059b104e7e7c2e9c156efec253af7743a6aa7c7933989a86"
+  ],
+  "recovery_evidence_partial_visits": [
+   48,
+   "69e5cadc18840fc1d61969dc9e5d9b2dd9e7078777151ae4b5a654c6ac2550d2"
+  ],
+  "recovery_exclusions": [
+   37,
+   "e6ca520359709f9093493761ee4540d99444e5e318b8a1c56ccbf0303d5e0fa0"
+  ],
+  "recovery_merge_log": [
+   14,
+   "93d93a29cf6b156aa0bb0705bc1d61f0c58b432753699c003863935200ab98bf"
+  ],
+  "recovery_network_counter_components": [
+   10,
+   "429b017d333d3051c599dc443eaa7ca1a4154ce63e2ff755c2e4cde511ef10d6"
+  ],
+  "recovery_pending_post_incident": [
+   14,
+   "50097031074701925871c0630fbb11e5561064a4703887a935d38a1d53d0170c"
+  ],
+  "recovery_provenance": [
+   268,
+   "8076e9b11a401c3a1a1d39c793700fe9cb90538869d105d395a91aa16d77597a"
+  ],
+  "recovery_staging_manifest": [
+   3,
+   "866b6fd3c4f98938b79fda0b2e0d9c7cbe2e7c397c78546ad71ae32528982a58"
+  ],
+  "reputation_evidence": [
+   8,
+   "3b8742e9f5488ba86d35e529f801e532013dcf4c083c5f62749acec926e21e70"
+  ],
+  "sensor_device_associations": [
+   2,
+   "8109855a82dbf8dca7d2db5240a1c38d03a9f3efb8d374cca5e5436872aa0315"
+  ],
+  "web_visits": [
+   161,
+   "2f1ba99ea5de0a414c47ddd6dacda09676b135c3fc637f6ac5a683318b98d1ef"
+  ]
+ },
+ "sqlite_sequence": {
+  "endpoints": 5911,
+  "web_visits": 286,
+  "domain_reputation": 33,
+  "devices": 2,
+  "recovery_network_counter_components": 10,
+  "reputation_evidence": 8,
+  "admins": 1,
+  "login_attempts": 10,
+  "network_activity": 6587,
+  "sensor_device_associations": 2,
+  "alerts": 1,
+  "alert_events": 2
+ },
+ "integrity": "ok",
+ "fk_violations": 0,
+ "source": "C:\\Users\\Moshe\\cyber_project\\data\\monitoring.db",
+ "backup": "C:\\Users\\Moshe\\cyber_project\\data\\backups\\monitoring_F21_before_activation_20261009_122037.db",
+ "sha256": "bb6ea7fadd74199217d5ab1e76d0a5081d2d2182cf798d633ba4d1abca742d82",
+ "size": 376832
+}

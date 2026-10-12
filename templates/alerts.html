@@ -10,21 +10,58 @@
       <div class="alert-top">
         <span class="badge badge-sev-{{ a.severity|lower }}">{{ 'Dangerous' if a.severity == 'HIGH' else 'Needs review' }}</span>
         <span class="alert-status">{{ 'Open' if a.status == 'OPEN' else 'Handled' }}</span>
+        {% if a.explain.historical %}<span class="badge badge-historical" title="Raised before shadow recording began. Its original decision is unchanged; the explanation below is reconstructed from the evidence stored now.">Historical</span>{% endif %}
       </div>
       <h3 class="alert-headline">{{ a.title|upper }}</h3>
       <dl class="alert-facts">
         <div><dt>Computer</dt><dd>{{ a.computer_name }}</dd></div>
         <div><dt>User</dt><dd>{{ a.username or '-' }}</dd></div>
-        <div><dt>Website</dt><dd class="domain">{{ a.domain }}</dd></div>
+        <div><dt>{{ a.target_label }}</dt><dd class="domain">{{ a.domain }}</dd></div>
         <div><dt>Detected</dt><dd class="mono" title="{{ a.created_at }}">{{ a.detected_label }}</dd></div>
+        <div><dt>Seen by</dt><dd>{{ a.source_label }}</dd></div>
+        <div class="fact-wide"><dt>Exposures</dt><dd>{{ a.explain.logical_exposures }} visit{{ '' if a.explain.logical_exposures == 1 else 's' }} counted{% if a.explain.logical_exposures > 1 %}, the latest at {{ a.last_exposure_label }}{% endif %}{% if a.explain.supporting_records %}; plus {{ a.explain.supporting_records }} supporting record{{ '' if a.explain.supporting_records == 1 else 's' }} of the same visit{{ '' if a.explain.supporting_records == 1 else 's' }} reported by a second sensor (not counted again){% endif %}</dd></div>
+        {% if a.scope_label %}<div><dt>Scope</dt><dd>{{ a.scope_label }}</dd></div>{% endif %}
+        {% if a.page_label %}<div><dt>Page</dt><dd class="mono">{{ a.page_label }}</dd></div>{% endif %}
+        {% if a.risk %}<div><dt>Risk score</dt><dd><span class="risk-pill risk-{{ a.risk.band }}" title="{{ score_tooltip }}">{{ a.risk.score }} / 100 &middot; {{ a.risk.label }}</span> <span class="muted">{{ a.risk.coverage_text }}</span></dd></div>{% endif %}
+        {% if a.url_findings %}<div><dt>Page evidence</dt><dd>{% for f in a.url_findings %}{{ f }}{% if not loop.last %}<br>{% endif %}{% endfor %}</dd></div>{% endif %}
       </dl>
+      {% if a.escalated_label %}
+      <p class="alert-escalation"><strong>Escalated:</strong> raised from "{{ a.previous_title }}" to "{{ 'Dangerous' if a.severity == 'HIGH' else 'Needs review' }}" at {{ a.escalated_label }} after new evidence. It was first detected at {{ a.detected_label }}.</p>
+      {% endif %}
+      <div class="alert-explain">
+        <p><strong>Why this alert was generated:</strong> {{ a.explain.why }}.
+          {% if a.explain.detectors %}Reported by
+          {% for d in a.explain.detectors %}<span class="nowrap">{{ d.provider }} ({{ d.level|lower }}{% if d.vendor %}: {{ d.vendor }}{% elif d.provider == 'VirusTotal' %}: vendor not recorded{% endif %})</span>{% if not loop.last %}, {% endif %}{% endfor %}.
+          {% else %}No stored source evidence is available for this domain now.{% endif %}</p>
+        <p><strong>Evidence strength:</strong> {{ a.explain.strength }}.</p>
+        {% if a.risk %}<p><strong>Risk score and the rule:</strong> the score ({{ a.risk.score }} / 100) is shown for information; the alert rule does not use it.{% if a.discrepancy %} {{ a.discrepancy }}{% endif %}</p>{% endif %}
+        <p><strong>Sources consulted {{ 'at the time' if not a.explain.historical else '(reconstructed)' }}:</strong> {{ a.explain.coverage.answered|join(', ') or 'none recorded' }}{% if a.explain.coverage.failed %}; unavailable: {{ a.explain.coverage.failed|join(', ') }}{% endif %}{% if a.explain.coverage.skipped %}; skipped: {{ a.explain.coverage.skipped|join(', ') }}{% endif %}. <span class="muted">({{ a.explain.coverage_basis }})</span></p>
+        <p class="muted"><strong>Shadow comparison (information only, does not change this alert):</strong> {% if a.explain.proposed_known %}the proposed corroborated policy would {{ 'also raise this alert' if a.explain.agree else ('raise no alert' if not a.explain.proposed else 'raise a ' ~ a.explain.proposed ~ ' alert') }}. {% endif %}{{ a.explain.shadow_note }}</p>
+      </div>
       <p class="alert-why"><strong>Why this matters:</strong> {{ a.why }}</p>
       <p class="alert-action"><strong>Recommended action:</strong> {{ a.action }}</p>
       <details class="tech"><summary>Technical details</summary>
         <div class="muted">{{ a.reason }}</div>
+        {% if a.risk %}
+        <p class="muted"><strong>Why the risk score is {{ a.risk.score }}:</strong></p>
+        <ul class="muted risk-lines">{% for line in a.risk.lines %}<li>{{ line }}</li>{% endfor %}</ul>
+        {% if a.discrepancy %}<p class="muted"><strong>Note:</strong> {{ a.discrepancy }}</p>{% endif %}
+        <p class="muted"><strong>What each source said:</strong></p>
+        <ul class="muted alert-sources">
+          {% for s in a.sources %}<li>{{ s.provider }} ({{ 'this page' if s.scope == 'url' else 'whole site' }}): {{ s.verdict|replace('_', ' ')|lower }}{% if s.categories %} - {{ s.categories|join(', ') }}{% endif %}{% if s.state != 'CHECKED' and s.reason %} ({{ s.reason }}){% endif %}</li>{% endfor %}
+        </ul>
+        {% endif %}
+        {% if a.events %}
+        <ul class="muted alert-evidence">
+          {% for e in a.events %}
+          <li>{{ e.recorded_at }} &middot; {{ e.kind|lower }} &middot; {{ e.verdict or '-' }}{% if e.previous_severity %} (was {{ e.previous_severity }}, now {{ e.severity }}){% endif %} &middot; {{ e.browser or 'agent' }} &middot; {{ e.source or '-' }}{% if e.web_visit_id %} &middot; visit #{{ e.web_visit_id }}{% endif %}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
       </details>
       {% if a.status == 'OPEN' %}
       <form method="post" action="{{ url_for('close_alert', alert_id=a.id) }}" class="inline-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn">Mark as handled</button>
       </form>
       {% endif %}

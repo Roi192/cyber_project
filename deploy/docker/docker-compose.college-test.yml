@@ -1,0 +1,43 @@
+# Local compatibility test of the college installation (Phase F3.30). Run from the folder that holds cyber_project/ and docker_test/ :
+#
+#   docker compose -f docker_test/docker-compose.college-test.yml build
+#   docker compose -f docker_test/docker-compose.college-test.yml run --rm smoke      # independent end-to-end check, NO network
+#   docker compose -f docker_test/docker-compose.college-test.yml up                  # the exact `python app.py`; open http://127.0.0.1:5396/
+#   docker compose -f docker_test/docker-compose.college-test.yml down --rmi local --volumes
+#
+# No API key is defined here. Providers stay unconfigured (honestly "no key") unless you add the optional env file below for an authorised integration test.
+services:
+  college-test:
+    image: wm-college-test:ubuntu2004
+    build:
+      context: ..
+      dockerfile: docker_test/Dockerfile.college-test
+      args:
+        PIP_CERT_FILE: ${PIP_CERT_FILE:-}
+    container_name: wm-college-test
+    user: "1000:1000"
+    ports:
+      - "127.0.0.1:${HOST_PORT:-5396}:5002"   # host 5396 -> container 5002; only your own PC can reach it (production uses 5002)
+    # OPTIONAL, authorised live-provider test only (never commit or bake it; the file is read at run time):
+    # env_file:
+    #   - ./provider-test.env            # copy provider-test.env.example, fill keys locally; real requests will then be sent
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+    stop_grace_period: 15s
+
+  smoke:
+    image: wm-college-test:ubuntu2004
+    profiles: ["smoke"]
+    user: "1000:1000"
+    network_mode: "none"                 # no network at all: nothing can reach a provider
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+    command: ["bash", "-c", "source /home/team2/cyber_project/venv/bin/activate && python /home/team2/smoke/verify_college_package.py /home/team2/package_pristine --python \"$(which python)\" --port 5392"]

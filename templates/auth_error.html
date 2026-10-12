@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Security check - Website Monitor</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="login-page">
+  <main class="login-card" role="alert">
+    <div class="brand login-brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span>Website Monitor</span>
+    </div>
+    <h1 class="login-title">Request not accepted</h1>
+    <p>{{ message }}</p>
+    <p><a class="btn" href="{{ url_for('dashboard') }}">Back to the dashboard</a></p>
+  </main>
+</body>
+</html>

@@ -23,7 +23,7 @@ var identityInFlight = null;
 // identity + settings (persisted in chrome.storage.local)
 // --------------------------------------------------------------------
 async function loadIdentity() {
-  var stored = await chrome.storage.local.get(["endpoint_uid", "computer_name", "username", "api_key", "server_url"]);
+  var stored = await chrome.storage.local.get(["endpoint_uid", "computer_name", "username", "api_key", "server_url", "sensor_secret"]);
   var updates = {};
   if (!stored.endpoint_uid) {
     updates.endpoint_uid = crypto.randomUUID();        // generated once per installation
@@ -41,6 +41,7 @@ async function loadIdentity() {
   cfg.server_url = cfg.server_url || DEFAULT_SERVER_URL;
   cfg.username = cfg.username || "";
   cfg.api_key = cfg.api_key || "";
+  cfg.sensor_secret = cfg.sensor_secret || "";            // only present once this browser was paired with a Windows agent
   return cfg;
 }
 
@@ -53,7 +54,8 @@ function ensureIdentity() {
 }
 
 function registrationPayload(cfg) {
-  return { endpoint_uid: cfg.endpoint_uid, computer_name: cfg.computer_name, username: cfg.username, browser: browserName() };
+  return { endpoint_uid: cfg.endpoint_uid, computer_name: cfg.computer_name, username: cfg.username, browser: browserName(),
+           sensor_version: extensionVersion() };
 }
 
 function localIsoTimestamp() {
@@ -75,11 +77,13 @@ async function callServer(cfg, path, body) {
   }
   var headers = { "Content-Type": "application/json" };
   if (cfg.api_key) { headers["X-Api-Key"] = cfg.api_key; }
+  if (cfg.sensor_secret) { headers["X-Sensor-Secret"] = cfg.sensor_secret; }   // proves this IS the paired browser, not just anyone who knows its id
   var controller = new AbortController();
   var timer = setTimeout(function () { controller.abort(); }, 5000);
   try {
     var res = await fetch(norm.url + path, { method: "POST", headers: headers, body: JSON.stringify(body), signal: controller.signal });
-    if (res.status === 401) { logError("the server rejected the API key"); }
+    if (res.status === 401) { logError("the server rejected the API key or this browser's pairing credential"); }
+    else if (res.status === 403) { logError("the server refused this browser (its pairing was revoked) - pair it again"); }
     else if (!res.ok) { logError("server responded " + res.status); }
     return { ok: res.ok, status: res.status };
   } catch (e) {
